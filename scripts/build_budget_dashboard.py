@@ -16,10 +16,11 @@ int_fields = {
     "Tổng Chi Phí Ads (Sau Thuế)", "Chi Phí FB Mess (Sau Thuế)", "Chi Phí FB Landing (Sau Thuế)", "Chi Phí TikTok (Sau Thuế)",
     "Chi Phí FB Mess (Trước Thuế)", "Chi Phí FB Landing (Trước Thuế)", "Chi Phí TikTok (Trước Thuế)",
     "SL Mess", "SL Data Tổng", "SL Data FB Mess", "SL Data FB Landing", "SL Data TikTok",
-    "CPL Tổng", "CP/Mess", "HĐ Ký Trong Tháng", "Tổng HĐ", "HĐ Hết Vòng", "CP/HĐ Hết Vòng",
+    "CPL Tổng", "CPL Kế Hoạch", "Chênh Lệch CPL", "CP/Mess",
+    "HĐ Ký Trong Tháng", "Tổng HĐ", "HĐ Hết Vòng", "CP/HĐ Hết Vòng",
     "Doanh Số Trong Tháng", "Doanh Số Tổng"
 }
-float_fields = {"CP/DS Tổng (%)"}
+float_fields = {"CP/DS Tổng (%)", "% Vượt/Đạt CPL KH"}
 
 with open(csv_path, mode="r", encoding="utf-8-sig") as f:
     reader = csv.DictReader(f)
@@ -45,7 +46,7 @@ html_content = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Trị Ngân Sách Sản Phẩm 2026 | Product Report</title>
+    <title>Quản Trị Ngân Sách & CPL Sản Phẩm 2026 | Product Report</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -101,7 +102,7 @@ html_content = """<!DOCTYPE html>
         }
 
         .container {
-            max-width: 1580px;
+            max-width: 1600px;
             margin: 0 auto;
             padding: 1rem 1.25rem;
         }
@@ -118,7 +119,7 @@ html_content = """<!DOCTYPE html>
             border: 1px solid var(--border-color);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-card);
-            margin-bottom: 0.9rem;
+            margin-bottom: 0.85rem;
         }
 
         .brand {
@@ -191,11 +192,11 @@ html_content = """<!DOCTYPE html>
             align-items: center;
             gap: 0.4rem;
             flex-wrap: wrap;
-            padding: 0.65rem 1rem;
+            padding: 0.6rem 1rem;
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
-            margin-bottom: 1rem;
+            margin-bottom: 0.85rem;
         }
 
         .prod-pill {
@@ -208,6 +209,9 @@ html_content = """<!DOCTYPE html>
             font-weight: 700;
             cursor: pointer;
             transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
         }
 
         .prod-pill:hover { border-color: var(--primary); color: var(--text-primary); }
@@ -217,6 +221,70 @@ html_content = """<!DOCTYPE html>
             color: #fff;
             box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
         }
+
+        .pill-dot-alert {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #ef4444;
+            display: inline-block;
+        }
+
+        .pill-dot-ok {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            display: inline-block;
+        }
+
+        /* ─── CPL ALERT BANNER ─── */
+        .cpl-alert-strip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-md);
+            background: rgba(239, 68, 68, 0.10);
+            border: 1px solid rgba(239, 68, 68, 0.32);
+            margin-bottom: 1rem;
+            font-size: 0.79rem;
+        }
+
+        .cpl-alert-chips {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .cpl-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.22rem 0.6rem;
+            border-radius: var(--radius-full);
+            font-size: 0.74rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .cpl-chip.over {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.45);
+        }
+
+        .cpl-chip.good {
+            background: rgba(16, 185, 129, 0.18);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        [data-theme="light"] .cpl-chip.over { color: #dc2626; }
+        [data-theme="light"] .cpl-chip.good { color: #059669; }
 
         /* ─── SECTION CONTAINER ─── */
         .section-box {
@@ -254,26 +322,26 @@ html_content = """<!DOCTYPE html>
             font-weight: 800;
         }
 
-        /* ─── SECTION 1: 4 COMPACT KPI CARDS ─── */
+        /* ─── SECTION 1: 5 COMPACT KPI CARDS ─── */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0.85rem;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.8rem;
         }
 
-        @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 600px) { .kpi-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 700px) { .kpi-grid { grid-template-columns: 1fr; } }
 
         .kpi-box {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-top: 3px solid var(--accent, var(--primary));
             border-radius: var(--radius-md);
-            padding: 0.9rem 1.05rem;
+            padding: 0.85rem 1rem;
         }
 
         .kpi-name {
-            font-size: 0.73rem;
+            font-size: 0.72rem;
             font-weight: 700;
             text-transform: uppercase;
             color: var(--text-secondary);
@@ -282,7 +350,7 @@ html_content = """<!DOCTYPE html>
         }
 
         .kpi-num {
-            font-size: 1.48rem;
+            font-size: 1.38rem;
             font-weight: 800;
             margin: 0.25rem 0;
             letter-spacing: -0.02em;
@@ -290,7 +358,7 @@ html_content = """<!DOCTYPE html>
         }
 
         .kpi-foot {
-            font-size: 0.74rem;
+            font-size: 0.73rem;
             color: var(--text-secondary);
             display: flex;
             justify-content: space-between;
@@ -302,7 +370,7 @@ html_content = """<!DOCTYPE html>
         /* ─── SECTION 2: CHARTS ─── */
         .charts-row {
             display: grid;
-            grid-template-columns: 1.65fr 1fr;
+            grid-template-columns: 1.35fr 1fr;
             gap: 1rem;
             margin-bottom: 1rem;
         }
@@ -320,15 +388,16 @@ html_content = """<!DOCTYPE html>
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
             gap: 0.5rem;
             margin-bottom: 0.65rem;
-            font-size: 0.86rem;
+            font-size: 0.85rem;
             font-weight: 800;
         }
 
         .canvas-wrap {
             position: relative;
-            height: 310px;
+            height: 300px;
             width: 100%;
         }
 
@@ -365,7 +434,7 @@ html_content = """<!DOCTYPE html>
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.8rem;
+            font-size: 0.79rem;
             text-align: left;
             white-space: nowrap;
             font-variant-numeric: tabular-nums;
@@ -373,16 +442,16 @@ html_content = """<!DOCTYPE html>
 
         th {
             background: var(--bg-surface-solid);
-            padding: 0.68rem 0.85rem;
+            padding: 0.65rem 0.8rem;
             font-weight: 700;
             color: var(--text-secondary);
             border-bottom: 2px solid var(--border-color);
-            font-size: 0.72rem;
+            font-size: 0.71rem;
             text-transform: uppercase;
         }
 
         td {
-            padding: 0.62rem 0.85rem;
+            padding: 0.6rem 0.8rem;
             border-bottom: 1px solid var(--border-color);
             color: var(--text-primary);
         }
@@ -398,20 +467,21 @@ html_content = """<!DOCTYPE html>
         .badge {
             display: inline-flex;
             align-items: center;
+            gap: 0.2rem;
             padding: 0.15rem 0.5rem;
             border-radius: var(--radius-full);
-            font-size: 0.71rem;
+            font-size: 0.7rem;
             font-weight: 800;
         }
 
-        .b-up { background: rgba(16, 185, 129, 0.16); color: #34d399; }
-        .b-down { background: rgba(239, 68, 68, 0.16); color: #f87171; }
-        .b-warn { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
-        .b-info { background: rgba(6, 182, 212, 0.16); color: #22d3ee; }
+        .b-up { background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .b-down { background: rgba(239, 68, 68, 0.18); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .b-warn { background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+        .b-info { background: rgba(6, 182, 212, 0.16); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.35); }
         .b-muted { background: rgba(148, 163, 184, 0.14); color: #94a3b8; }
 
         .mini-bar {
-            width: 48px;
+            width: 44px;
             height: 5px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 99px;
@@ -431,8 +501,8 @@ html_content = """<!DOCTYPE html>
             <div class="brand">
                 <div class="brand-logo">📊</div>
                 <div>
-                    <div class="brand-title">QUẢN TRỊ NGÂN SÁCH SẢN PHẨM QUẢNG CÁO</div>
-                    <div style="font-size:0.73rem; color:var(--text-secondary);" id="syncStatusText">🟢 Nguồn: Lark Base (tblEr3vySvt58EkK) ➔ Google Sheet</div>
+                    <div class="brand-title">QUẢN TRỊ NGÂN SÁCH & ĐỊNH MỨC CPL SẢN PHẨM</div>
+                    <div style="font-size:0.72rem; color:var(--text-secondary);" id="syncStatusText">🟢 Nguồn: Lark Base (tblEr3vySvt58EkK) ➔ Google Sheet Online</div>
                 </div>
             </div>
 
@@ -457,14 +527,17 @@ html_content = """<!DOCTYPE html>
         <!-- ─── QUICK PRODUCT PILLS ─── -->
         <div class="pills-bar" id="productPills"></div>
 
+        <!-- ─── CPL ALERT STRIP (CẢNH BÁO SẢN PHẨM VƯỢT CPL KẾ HOẠCH) ─── -->
+        <div class="cpl-alert-strip" id="cplAlertStrip"></div>
+
         <!-- ═══════════════════════════════════════════════════════════════════════════
-             SECTION 1: TỔNG CHI TIÊU NĂM 2026 & SO SÁNH THÁNG TRƯỚC VS. THÁNG HIỆN TẠI
+             SECTION 1: TỔNG CHI TIÊU NĂM 2026, SO SÁNH THÁNG & ĐỐI CHIẾU CPL KẾ HOẠCH
              ═══════════════════════════════════════════════════════════════════════════ -->
         <div class="section-box">
             <div class="section-bar">
                 <div class="section-label">
                     <span class="tag-sec">SECTION 1</span>
-                    <span id="sec1Title">Tổng Chi Tiêu Năm 2026 & So Sánh Tháng Trước vs. Tháng Hiện Tại</span>
+                    <span id="sec1Title">Tổng Chi Tiêu Năm 2026, So Sánh Tháng Trước vs. Tháng Hiện Tại & CPL Kế Hoạch</span>
                 </div>
                 <div class="switch-group">
                     <button class="switch-btn active" id="btnTaxAfter" onclick="setTaxMode('after')">Sau thuế (Tổng CP)</button>
@@ -476,13 +549,13 @@ html_content = """<!DOCTYPE html>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════════
-             SECTION 2: BIỂU ĐỒ CHI TIÊU CÁC SẢN PHẨM QUA CÁC THÁNG
+             SECTION 2: BIỂU ĐỒ CHI TIÊU & ĐỐI SÁNH CPL KẾ HOẠCH CÁC SẢN PHẨM
              ═══════════════════════════════════════════════════════════════════════════ -->
         <div class="section-box">
             <div class="section-bar">
                 <div class="section-label">
                     <span class="tag-sec">SECTION 2</span>
-                    <span>Biểu Đồ Chi Tiêu Các Sản Phẩm Qua Các Tháng</span>
+                    <span>Biểu Đồ Chi Tiêu Các Sản Phẩm & Kiểm Soát Trần CPL Kế Hoạch</span>
                 </div>
                 <div class="switch-group">
                     <button class="switch-btn active" id="btnChartSpend" onclick="setChartMetric('spend')">💰 Chi Tiêu</button>
@@ -491,12 +564,12 @@ html_content = """<!DOCTYPE html>
                 </div>
             </div>
 
-            <!-- Hàng 1: So sánh Tháng trước vs Tháng hiện tại + Tỷ trọng năm -->
+            <!-- Hàng 1: So sánh Chi tiêu Tháng trước vs Tháng hiện tại + Đối sánh CPL Thực tế vs CPL Kế hoạch -->
             <div class="charts-row">
                 <div class="chart-panel">
                     <div class="chart-head">
-                        <span id="compareChartTitle">1. So Sánh Chi Tiêu Sản Phẩm: Tháng Trước vs. Tháng Hiện Tại</span>
-                        <span style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">Bấm vào cột để lọc SP</span>
+                        <span id="compareChartTitle">1. Chi Tiêu Sản Phẩm: Tháng Trước vs. Tháng Hiện Tại</span>
+                        <span style="font-size:0.71rem; color:var(--text-muted); font-weight:600;">Bấm vào cột để lọc SP</span>
                     </div>
                     <div class="canvas-wrap">
                         <canvas id="chartMonthCompare"></canvas>
@@ -505,35 +578,41 @@ html_content = """<!DOCTYPE html>
 
                 <div class="chart-panel">
                     <div class="chart-head">
-                        <span id="shareChartTitle">2. Tỷ Trọng Ngân Sách Năm 2026 Theo Sản Phẩm</span>
+                        <span id="cplChartTitle">2. Đối Sánh CPL Thực Tế vs. CPL Kế Hoạch (Đỏ = Vượt KH)</span>
+                        <div class="switch-group">
+                            <button class="switch-btn active" id="btnCplModeAvg" onclick="setCplChartMode('avg')">TB Các Tháng</button>
+                            <button class="switch-btn" id="btnCplModeCurr" onclick="setCplChartMode('curr')">Tháng Hiện Tại</button>
+                        </div>
                     </div>
                     <div class="canvas-wrap">
-                        <canvas id="chartYearShare"></canvas>
+                        <canvas id="chartCplVsPlan"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Hàng 2: Xu hướng chi tiêu qua các tháng trong năm -->
+            <!-- Hàng 2: Xu hướng chi tiêu & CPL qua các tháng trong năm -->
             <div class="chart-panel" style="margin-bottom: 1rem;">
                 <div class="chart-head">
-                    <span id="trendChartTitle">3. Xu Hướng Chi Tiêu Qua Các Tháng Trong Năm (T01 ➔ T11)</span>
+                    <span id="trendChartTitle">3. Diễn Biến Qua Các Tháng Trong Năm (T01 ➔ T11)</span>
                     <div class="switch-group">
-                        <button class="switch-btn active" id="btnStackProd" onclick="setTrendMode('product')">Theo Sản Phẩm</button>
-                        <button class="switch-btn" id="btnStackChannel" onclick="setTrendMode('channel')">Theo Kênh (FB Mess / LDP / TikTok)</button>
+                        <button class="switch-btn active" id="btnStackProd" onclick="setTrendMode('product')">Chi Tiêu Theo SP</button>
+                        <button class="switch-btn" id="btnStackChannel" onclick="setTrendMode('channel')">Chi Tiêu Theo Kênh</button>
+                        <button class="switch-btn" id="btnStackCpl" onclick="setTrendMode('cpl')">🎯 CPL Qua Các Tháng vs. KH</button>
                     </div>
                 </div>
-                <div class="canvas-wrap" style="height: 290px;">
+                <div class="canvas-wrap" style="height: 285px;">
                     <canvas id="chartMonthlyTrend"></canvas>
                 </div>
             </div>
 
             <!-- Bảng đối chiếu gọn & Ma trận các tháng -->
             <div class="chart-head" style="margin-top:0.25rem;">
-                <span id="tableModeTitle">4. Bảng Số Liệu Ngân Sách Sản Phẩm</span>
-                <div style="display:flex; gap:0.4rem;">
+                <span id="tableModeTitle">4. Bảng Quản Trị Ngân Sách & Cảnh Báo CPL Sản Phẩm</span>
+                <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
                     <div class="switch-group">
-                        <button class="switch-btn active" id="btnTblCompare" onclick="setTableMode('compare')">So Sánh 2 Tháng</button>
-                        <button class="switch-btn" id="btnTblMatrix" onclick="setTableMode('matrix')">Ma Trận Toàn Bộ Các Tháng</button>
+                        <button class="switch-btn active" id="btnTblCompare" onclick="setTableMode('compare')">So Sánh Tháng & CPL KH</button>
+                        <button class="switch-btn" id="btnTblCplMatrix" onclick="setTableMode('cpl_matrix')">🎯 Ma Trận CPL 11 Tháng vs. KH</button>
+                        <button class="switch-btn" id="btnTblMatrix" onclick="setTableMode('matrix')">💰 Ma Trận Chi Tiêu 11 Tháng</button>
                     </div>
                     <button class="btn" style="height:28px; padding:0 0.6rem; font-size:0.72rem;" onclick="exportCSV()">📥 Xuất CSV</button>
                 </div>
@@ -552,13 +631,26 @@ html_content = """<!DOCTYPE html>
         const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1V9z5T7BQABDSvsytY0P1kKV5b4lMfpzcFZWghJwUitw/gviz/tq?tqx=out:csv&sheet=Data_San_Pham_Cleaned";
         let RAW_DATA = """ + json_data_str + """;
 
-        let taxMode = "after";       // 'after' | 'before'
-        let chartMetric = "spend";   // 'spend' | 'data' | 'hd'
-        let trendMode = "product";   // 'product' | 'channel'
-        let tableMode = "compare";   // 'compare' | 'matrix'
+        // Định mức CPL Kế hoạch chuẩn (VNĐ)
+        const CPL_PLAN_MAP = {
+            "Data Analyst": 170000,
+            "Data Engineer": 200000,
+            "Embedded": 180000,
+            "BrSE": 250000,
+            "AI Engineer": 200000,
+            "Cyber Security": 250000,
+            "Network Security": 250000,
+            "Xueba": 160000
+        };
+
+        let taxMode = "after";         // 'after' | 'before'
+        let chartMetric = "spend";     // 'spend' | 'data' | 'hd'
+        let cplChartMode = "avg";      // 'avg' (TB các tháng) | 'curr' (Tháng hiện tại)
+        let trendMode = "product";     // 'product' | 'channel' | 'cpl'
+        let tableMode = "compare";     // 'compare' | 'cpl_matrix' | 'matrix'
 
         let chartCompareInst = null;
-        let chartShareInst = null;
+        let chartCplInst = null;
         let chartTrendInst = null;
         let currentSummaryRows = [];
 
@@ -577,6 +669,16 @@ html_content = """<!DOCTYPE html>
             return String(Math.round(v));
         };
         const fmtNum = (v) => new Intl.NumberFormat('vi-VN').format(Math.round(v || 0));
+
+        function normalizeProd(raw) {
+            const p = String(raw || "").trim();
+            if (p === "Network Security") return "Cyber Security";
+            return p || "Khác";
+        }
+
+        function getPlanCPL(prodName) {
+            return CPL_PLAN_MAP[prodName] || 0;
+        }
 
         function getSpend(r) {
             if (taxMode === 'before') {
@@ -606,7 +708,6 @@ html_content = """<!DOCTYPE html>
             const year = document.getElementById('yearSelect').value;
             const yearRows = RAW_DATA.filter(r => String(r["Năm"]) === String(year));
 
-            // Months
             const months = Array.from(new Set(yearRows.map(r => r["Mã Tháng"]).filter(Boolean))).sort();
             const prevSel = document.getElementById('prevMonthSelect');
             const currSel = document.getElementById('currMonthSelect');
@@ -633,10 +734,9 @@ html_content = """<!DOCTYPE html>
                 currSel.value = months[0];
             }
 
-            // Products
             const prodSpend = {};
             yearRows.forEach(r => {
-                const p = r["Tag Sản Phẩm"] || r["Sản Phẩm Gốc"] || "Khác";
+                const p = normalizeProd(r["Tag Sản Phẩm"] || r["Sản Phẩm Gốc"]);
                 prodSpend[p] = (prodSpend[p] || 0) + getSpend(r);
             });
             const sortedProds = Object.keys(prodSpend).sort((a, b) => prodSpend[b] - prodSpend[a]);
@@ -645,31 +745,14 @@ html_content = """<!DOCTYPE html>
             const curProd = prodSel.value;
             prodSel.innerHTML = `<option value="ALL">📦 Tất cả (${sortedProds.length} sản phẩm)</option>`;
             sortedProds.forEach(p => {
+                const plan = getPlanCPL(p);
+                const planTxt = plan > 0 ? ` • KH ${fmtShort(plan)}` : '';
                 const o = document.createElement('option');
                 o.value = p;
-                o.textContent = `📦 ${p} (${fmtShort(prodSpend[p])})`;
+                o.textContent = `📦 ${p} (${fmtShort(prodSpend[p])}${planTxt})`;
                 prodSel.appendChild(o);
             });
             if (sortedProds.includes(curProd)) prodSel.value = curProd;
-
-            // Pills
-            const pillsEl = document.getElementById('productPills');
-            pillsEl.innerHTML = '';
-            const allBtn = document.createElement('button');
-            allBtn.className = `prod-pill ${prodSel.value === 'ALL' ? 'active' : ''}`;
-            allBtn.setAttribute('data-prod', 'ALL');
-            allBtn.textContent = 'Tất cả';
-            allBtn.onclick = () => selectProduct('ALL');
-            pillsEl.appendChild(allBtn);
-
-            sortedProds.forEach(p => {
-                const b = document.createElement('button');
-                b.className = `prod-pill ${prodSel.value === p ? 'active' : ''}`;
-                b.setAttribute('data-prod', p);
-                b.textContent = p;
-                b.onclick = () => selectProduct(p);
-                pillsEl.appendChild(b);
-            });
         }
 
         function onYearChange() {
@@ -678,17 +761,13 @@ html_content = """<!DOCTYPE html>
         }
 
         function onProductDropdownChange() {
-            const val = document.getElementById('productSelect').value;
-            document.querySelectorAll('.prod-pill').forEach(b => {
-                b.classList.toggle('active', b.getAttribute('data-prod') === val);
-            });
             renderAll();
         }
 
         function selectProduct(prod) {
             const sel = document.getElementById('productSelect');
             sel.value = (sel.value === prod && prod !== 'ALL') ? 'ALL' : prod;
-            onProductDropdownChange();
+            renderAll();
         }
 
         function setTaxMode(m) {
@@ -707,16 +786,25 @@ html_content = """<!DOCTYPE html>
             renderAll();
         }
 
+        function setCplChartMode(m) {
+            cplChartMode = m;
+            document.getElementById('btnCplModeAvg').classList.toggle('active', m === 'avg');
+            document.getElementById('btnCplModeCurr').classList.toggle('active', m === 'curr');
+            renderAll();
+        }
+
         function setTrendMode(m) {
             trendMode = m;
             document.getElementById('btnStackProd').classList.toggle('active', m === 'product');
             document.getElementById('btnStackChannel').classList.toggle('active', m === 'channel');
+            document.getElementById('btnStackCpl').classList.toggle('active', m === 'cpl');
             renderAll();
         }
 
         function setTableMode(m) {
             tableMode = m;
             document.getElementById('btnTblCompare').classList.toggle('active', m === 'compare');
+            document.getElementById('btnTblCplMatrix').classList.toggle('active', m === 'cpl_matrix');
             document.getElementById('btnTblMatrix').classList.toggle('active', m === 'matrix');
             renderAll();
         }
@@ -734,7 +822,7 @@ html_content = """<!DOCTYPE html>
             let sysYearSpend = 0;
 
             yearRows.forEach(r => {
-                const p = r["Tag Sản Phẩm"] || r["Sản Phẩm Gốc"] || "Khác";
+                const p = normalizeProd(r["Tag Sản Phẩm"] || r["Sản Phẩm Gốc"]);
                 const ym = r["Mã Tháng"];
                 const sp = getSpend(r);
                 const ch = getChannelSpend(r);
@@ -746,40 +834,65 @@ html_content = """<!DOCTYPE html>
                 if (!prodMap[p]) {
                     prodMap[p] = {
                         name: p,
-                        group: r["Nhóm Sản Phẩm"] || "",
-                        yearSpend: 0, yearData: 0, yearMess: 0, yearHD: 0, yearDS: 0,
+                        planCPL: getPlanCPL(p),
+                        yearSpend: 0,
+                        yearSpendWithData: 0,
+                        yearData: 0,
+                        yearMess: 0,
+                        yearHD: 0,
+                        yearDS: 0,
                         months: {}
                     };
                 }
                 const po = prodMap[p];
                 po.yearSpend += sp;
-                po.yearData += dt;
+                if (dt > 0) {
+                    po.yearSpendWithData += sp;
+                    po.yearData += dt;
+                }
                 po.yearMess += ms;
                 po.yearHD += hd;
                 po.yearDS += ds;
                 sysYearSpend += sp;
 
                 if (!po.months[ym]) {
-                    po.months[ym] = { spend: 0, fbMess: 0, fbLdp: 0, tiktok: 0, data: 0, mess: 0, hd: 0, ds: 0 };
+                    po.months[ym] = { spend: 0, fbMess: 0, fbLdp: 0, tiktok: 0, data: 0, mess: 0, hd: 0, ds: 0, cpl: 0 };
                 }
-                po.months[ym].spend += sp;
-                po.months[ym].fbMess += ch.fbMess;
-                po.months[ym].fbLdp += ch.fbLdp;
-                po.months[ym].tiktok += ch.tiktok;
-                po.months[ym].data += dt;
-                po.months[ym].mess += ms;
-                po.months[ym].hd += hd;
-                po.months[ym].ds += ds;
+                const mo = po.months[ym];
+                mo.spend += sp;
+                mo.fbMess += ch.fbMess;
+                mo.fbLdp += ch.fbLdp;
+                mo.tiktok += ch.tiktok;
+                mo.data += dt;
+                mo.mess += ms;
+                mo.hd += hd;
+                mo.ds += ds;
+                mo.cpl = mo.data > 0 ? Math.round(mo.spend / mo.data) : (Number(r["CPL Tổng"]) || 0);
             });
 
             const summaryRows = Object.values(prodMap).map(p => {
-                const mp = p.months[prevM] || { spend: 0, fbMess: 0, fbLdp: 0, tiktok: 0, data: 0, mess: 0, hd: 0, ds: 0 };
-                const mc = p.months[currM] || { spend: 0, fbMess: 0, fbLdp: 0, tiktok: 0, data: 0, mess: 0, hd: 0, ds: 0 };
+                const mp = p.months[prevM] || { spend: 0, fbMess: 0, fbLdp: 0, tiktok: 0, data: 0, mess: 0, hd: 0, ds: 0, cpl: 0 };
+                const mc = p.months[currM] || { spend: 0, fbMess: 0, fbLdp: 0, tiktok: 0, data: 0, mess: 0, hd: 0, ds: 0, cpl: 0 };
                 const shareYear = sysYearSpend > 0 ? (p.yearSpend / sysYearSpend * 100) : 0;
                 const diffSpend = mc.spend - mp.spend;
                 const deltaSpendPct = mp.spend > 0 ? ((mc.spend - mp.spend) / mp.spend * 100) : (mc.spend > 0 ? 100 : 0);
-                const cplPrev = mp.data > 0 ? (mp.spend / mp.data) : 0;
-                const cplCurr = mc.data > 0 ? (mc.spend / mc.data) : 0;
+
+                // Tính CPL Trung bình các tháng trong năm (Weighted trên các tháng có Data + Simple avg)
+                const activeCplMonths = Object.values(p.months).filter(m => m.cpl > 0);
+                const overPlanMonths = p.planCPL > 0 ? activeCplMonths.filter(m => m.cpl > p.planCPL).length : 0;
+                const avgYearCPL = p.yearData > 0
+                    ? Math.round(p.yearSpendWithData / p.yearData)
+                    : (activeCplMonths.length > 0 ? Math.round(activeCplMonths.reduce((s, m) => s + m.cpl, 0) / activeCplMonths.length) : 0);
+
+                const cplPrev = mp.cpl;
+                const cplCurr = mc.cpl;
+
+                // So sánh với CPL Kế hoạch (Ưu tiên đánh giá cả TB Năm và Tháng hiện tại)
+                const refCPL = cplCurr > 0 ? cplCurr : avgYearCPL;
+                const diffPlanAvgPct = (p.planCPL > 0 && avgYearCPL > 0) ? ((avgYearCPL - p.planCPL) / p.planCPL * 100) : 0;
+                const diffPlanCurrPct = (p.planCPL > 0 && cplCurr > 0) ? ((cplCurr - p.planCPL) / p.planCPL * 100) : 0;
+                const isOverPlanAvg = p.planCPL > 0 && avgYearCPL > p.planCPL;
+                const isOverPlanCurr = p.planCPL > 0 && cplCurr > p.planCPL;
 
                 return {
                     ...p,
@@ -788,41 +901,113 @@ html_content = """<!DOCTYPE html>
                     mc,
                     diffSpend,
                     deltaSpendPct,
+                    avgYearCPL,
                     cplPrev,
-                    cplCurr
+                    cplCurr,
+                    activeCplMonthsCount: activeCplMonths.length,
+                    overPlanMonths,
+                    diffPlanAvgPct,
+                    diffPlanCurrPct,
+                    isOverPlanAvg,
+                    isOverPlanCurr
                 };
             }).sort((a, b) => b.yearSpend - a.yearSpend);
 
             currentSummaryRows = summaryRows;
 
+            renderProductPills(summaryRows, selProd);
+            renderCplAlertStrip(summaryRows, currM);
+
             const kpiRows = selProd === 'ALL' ? summaryRows : summaryRows.filter(r => r.name === selProd);
             renderSection1KPIs(kpiRows, selProd, year, prevM, currM, sysYearSpend);
-            renderSection2Charts(summaryRows, yearRows, allMonths, selProd, year, prevM, currM);
+            renderSection2Charts(summaryRows, allMonths, selProd, year, prevM, currM);
             renderMainTable(summaryRows, allMonths, selProd, year, prevM, currM);
+        }
+
+        function renderProductPills(summaryRows, selProd) {
+            const pillsEl = document.getElementById('productPills');
+            let html = `<button class="prod-pill ${selProd === 'ALL' ? 'active' : ''}" onclick="selectProduct('ALL')">Tất cả (${summaryRows.length})</button>`;
+            summaryRows.forEach(r => {
+                let dot = '';
+                if (r.planCPL > 0 && (r.avgYearCPL > 0 || r.cplCurr > 0)) {
+                    const over = (r.cplCurr > 0 ? r.isOverPlanCurr : r.isOverPlanAvg);
+                    dot = over ? `<span class="pill-dot-alert" title="Vượt CPL kế hoạch"></span>` : `<span class="pill-dot-ok" title="Đạt CPL kế hoạch"></span>`;
+                }
+                html += `<button class="prod-pill ${selProd === r.name ? 'active' : ''}" onclick="selectProduct('${r.name}')">${dot}${r.name}</button>`;
+            });
+            pillsEl.innerHTML = html;
+        }
+
+        function renderCplAlertStrip(summaryRows, currM) {
+            const strip = document.getElementById('cplAlertStrip');
+            const plannedRows = summaryRows.filter(r => r.planCPL > 0 && (r.avgYearCPL > 0 || r.cplCurr > 0));
+            const overList = plannedRows.filter(r => r.isOverPlanAvg || r.isOverPlanCurr);
+            const goodList = plannedRows.filter(r => !r.isOverPlanAvg && !r.isOverPlanCurr);
+
+            const overChips = overList.map(r => {
+                const cplShow = r.cplCurr > 0 ? r.cplCurr : r.avgYearCPL;
+                const pctShow = r.cplCurr > 0 ? r.diffPlanCurrPct : r.diffPlanAvgPct;
+                const tagLbl = r.cplCurr > 0 && r.isOverPlanCurr ? currM : 'TB năm';
+                return `<span class="cpl-chip over" onclick="selectProduct('${r.name}')" title="Bấm để lọc ${r.name}">🚨 ${r.name}: ${fmtShort(cplShow)} vs KH ${fmtShort(r.planCPL)} (+${pctShow.toFixed(0)}% ${tagLbl})</span>`;
+            }).join('');
+
+            const goodChips = goodList.map(r => {
+                const cplShow = r.cplCurr > 0 ? r.cplCurr : r.avgYearCPL;
+                const pctShow = r.cplCurr > 0 ? r.diffPlanCurrPct : r.diffPlanAvgPct;
+                return `<span class="cpl-chip good" onclick="selectProduct('${r.name}')" title="Bấm để lọc ${r.name}">✅ ${r.name}: ${fmtShort(cplShow)} / KH ${fmtShort(r.planCPL)} (${pctShow.toFixed(0)}%)</span>`;
+            }).join('');
+
+            strip.innerHTML = `
+                <div style="font-weight:800; color:#f87171; display:flex; align-items:center; gap:0.4rem;">
+                    <span>🎯 KIỂM SOÁT ĐỊNH MỨC CPL KẾ HOẠCH (${overList.length} SP Vượt KH / ${goodList.length} SP Đạt KH):</span>
+                </div>
+                <div class="cpl-alert-chips">
+                    ${overChips}
+                    ${goodChips}
+                </div>
+            `;
         }
 
         function renderSection1KPIs(rows, selProd, year, prevM, currM, sysYearSpend) {
             const ySpend = rows.reduce((s, r) => s + r.yearSpend, 0);
+            const ySpendWithData = rows.reduce((s, r) => s + r.yearSpendWithData, 0);
             const yData = rows.reduce((s, r) => s + r.yearData, 0);
             const yHD = rows.reduce((s, r) => s + r.yearHD, 0);
             const yShare = sysYearSpend > 0 ? (ySpend / sysYearSpend * 100) : 0;
+            const yCPL = yData > 0 ? Math.round(ySpendWithData / yData) : 0;
 
             const pSpend = rows.reduce((s, r) => s + r.mp.spend, 0);
             const pData = rows.reduce((s, r) => s + r.mp.data, 0);
             const pHD = rows.reduce((s, r) => s + r.mp.hd, 0);
-            const pCPL = pData > 0 ? (pSpend / pData) : 0;
+            const pCPL = pData > 0 ? Math.round(pSpend / pData) : 0;
 
             const cSpend = rows.reduce((s, r) => s + r.mc.spend, 0);
             const cData = rows.reduce((s, r) => s + r.mc.data, 0);
             const cHD = rows.reduce((s, r) => s + r.mc.hd, 0);
-            const cCPL = cData > 0 ? (cSpend / cData) : 0;
+            const cCPL = cData > 0 ? Math.round(cSpend / cData) : 0;
 
             const diffSpend = cSpend - pSpend;
             const deltaPct = pSpend > 0 ? ((cSpend - pSpend) / pSpend * 100) : (cSpend > 0 ? 100 : 0);
-            const deltaDataPct = pData > 0 ? ((cData - pData) / pData * 100) : 0;
+
+            // CPL Kế hoạch mục tiêu
+            let planVal = 0;
+            if (selProd !== 'ALL' && rows.length === 1) {
+                planVal = rows[0].planCPL;
+            } else {
+                // Trung bình gia quyền CPL kế hoạch của các SP có định mức
+                const planned = rows.filter(r => r.planCPL > 0 && r.yearData > 0);
+                const totDataPlanned = planned.reduce((s, r) => s + r.yearData, 0);
+                if (totDataPlanned > 0) {
+                    planVal = Math.round(planned.reduce((s, r) => s + r.planCPL * r.yearData, 0) / totDataPlanned);
+                }
+            }
+
+            const compareCPL = cCPL > 0 ? cCPL : yCPL;
+            const cplVsPlanPct = (planVal > 0 && compareCPL > 0) ? ((compareCPL - planVal) / planVal * 100) : 0;
+            const isOver = planVal > 0 && compareCPL > planVal;
 
             const scope = selProd === 'ALL' ? `Tất cả sản phẩm` : selProd;
-            document.getElementById('sec1Title').textContent = `Tổng Chi Tiêu Năm ${year} (${scope}) & So Sánh ${prevM} ➔ ${currM}`;
+            document.getElementById('sec1Title').textContent = `Tổng Chi Tiêu Năm ${year} (${scope}) • So Sánh ${prevM} ➔ ${currM} & Định Mức CPL`;
 
             document.getElementById('sec1KpiGrid').innerHTML = `
                 <div class="kpi-box" style="--accent: #6366f1;">
@@ -853,13 +1038,24 @@ html_content = """<!DOCTYPE html>
                 </div>
 
                 <div class="kpi-box" style="--accent: #f59e0b;">
-                    <div class="kpi-name"><span>⚖️ Chênh Lệch (${currM} vs ${prevM})</span> <span>MoM</span></div>
+                    <div class="kpi-name"><span>⚖️ Biến Thiên (${currM} vs ${prevM})</span> <span>MoM</span></div>
                     <div class="kpi-num" style="color:${deltaPct >= 0 ? '#fbbf24' : '#38bdf8'};">
                         ${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%
                     </div>
                     <div class="kpi-foot">
                         <span>Tiền: <b>${diffSpend >= 0 ? '+' : ''}${fmtShort(diffSpend)}</b></span>
-                        <span>Data: <b style="color:${deltaDataPct >= 0 ? '#34d399' : '#f87171'};">${deltaDataPct >= 0 ? '+' : ''}${deltaDataPct.toFixed(1)}%</b></span>
+                        <span>CPL: <b>${pCPL > 0 ? fmtShort(pCPL) : '--'} ➔ ${cCPL > 0 ? fmtShort(cCPL) : '--'}</b></span>
+                    </div>
+                </div>
+
+                <div class="kpi-box" style="--accent: ${isOver ? '#ef4444' : '#10b981'};">
+                    <div class="kpi-name"><span>🎯 CPL Thực Tế vs. Kế Hoạch</span> <span>${planVal > 0 ? 'KH: ' + fmtShort(planVal) : 'Chưa đặt KH'}</span></div>
+                    <div class="kpi-num" style="color:${isOver ? '#f87171' : '#34d399'};">
+                        ${compareCPL > 0 ? fmtVND(compareCPL) : '--'}
+                    </div>
+                    <div class="kpi-foot">
+                        <span>TB Năm: <b>${yCPL > 0 ? fmtShort(yCPL) : '--'}</b></span>
+                        <span>${planVal > 0 && compareCPL > 0 ? `<b style="color:${isOver ? '#f87171' : '#34d399'};">${isOver ? '🚨 Vượt +' : '✅ Đạt '}${cplVsPlanPct.toFixed(1)}%</b>` : '--'}</span>
                     </div>
                 </div>
             `;
@@ -873,7 +1069,7 @@ html_content = """<!DOCTYPE html>
             };
         }
 
-        function renderSection2Charts(summaryRows, yearRows, allMonths, selProd, year, prevM, currM) {
+        function renderSection2Charts(summaryRows, allMonths, selProd, year, prevM, currM) {
             const colors = getThemeColors();
 
             // 1. Chart 2A: Compare prevM vs currM per product
@@ -961,49 +1157,112 @@ html_content = """<!DOCTYPE html>
                 }
             });
 
-            // 2. Chart 2B: Year Share Doughnut
-            document.getElementById('shareChartTitle').textContent = `2. Tỷ Trọng Ngân Sách Năm ${year}`;
-            const ctxB = document.getElementById('chartYearShare').getContext('2d');
-            if (chartShareInst) chartShareInst.destroy();
-            chartShareInst = new Chart(ctxB, {
-                type: 'doughnut',
+            // 2. Chart 2B: Đối Sánh CPL Thực Tế vs CPL Kế Hoạch (Cột Đỏ = Vượt KH, Cột Xanh = Đạt KH, Đường Đứt Nét = CPL Kế Hoạch)
+            const cplRows = summaryRows.filter(r => r.planCPL > 0 && (r.avgYearCPL > 0 || r.cplCurr > 0));
+            const labelsB = cplRows.map(r => r.name);
+            const actualCplVals = cplRows.map(r => cplChartMode === 'curr' ? (r.cplCurr || r.avgYearCPL) : r.avgYearCPL);
+            const planCplVals = cplRows.map(r => r.planCPL);
+
+            const ctxB = document.getElementById('chartCplVsPlan').getContext('2d');
+            if (chartCplInst) chartCplInst.destroy();
+            chartCplInst = new Chart(ctxB, {
+                type: 'bar',
                 data: {
-                    labels: summaryRows.map(r => `${r.name} (${r.shareYear.toFixed(1)}%)`),
-                    datasets: [{
-                        data: summaryRows.map(r => r.yearSpend),
-                        backgroundColor: PALETTE,
-                        borderWidth: 2,
-                        borderColor: 'transparent'
-                    }]
+                    labels: labelsB,
+                    datasets: [
+                        {
+                            label: cplChartMode === 'curr' ? `CPL Thực Tế (${currM})` : `CPL TB Năm ${year}`,
+                            data: actualCplVals,
+                            backgroundColor: cplRows.map((r, idx) => actualCplVals[idx] > r.planCPL ? 'rgba(239, 68, 68, 0.82)' : 'rgba(16, 185, 129, 0.82)'),
+                            borderRadius: 6,
+                            order: 2
+                        },
+                        {
+                            label: 'Định Mức CPL Kế Hoạch',
+                            data: planCplVals,
+                            type: 'line',
+                            borderColor: '#fbbf24',
+                            backgroundColor: '#fbbf24',
+                            borderWidth: 2.5,
+                            borderDash: [5, 5],
+                            pointRadius: 5,
+                            tension: 0,
+                            order: 1
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '62%',
                     onClick: (e, els) => {
-                        if (els.length > 0) selectProduct(summaryRows[els[0].index].name);
+                        if (els.length > 0) selectProduct(labelsB[els[0].index]);
                     },
                     plugins: {
-                        legend: { position: 'right', labels: { color: colors.text, boxWidth: 11, font: { size: 11, weight: 600 } } },
+                        legend: { position: 'top', labels: { color: colors.text, boxWidth: 12, font: { size: 11, weight: 600 } } },
                         tooltip: {
                             callbacks: {
                                 label: (ctx) => {
-                                    const r = summaryRows[ctx.dataIndex];
-                                    return `${r.name}: ${fmtVND(r.yearSpend)} (${r.shareYear.toFixed(1)}%)`;
+                                    const r = cplRows[ctx.dataIndex];
+                                    const act = actualCplVals[ctx.dataIndex];
+                                    const diffPct = ((act - r.planCPL) / r.planCPL * 100).toFixed(1);
+                                    if (ctx.datasetIndex === 0) {
+                                        return `${ctx.dataset.label}: ${fmtVND(act)} (${act > r.planCPL ? '🚨 Vượt +' + diffPct + '%' : '✅ Đạt ' + diffPct + '%'})`;
+                                    }
+                                    return `CPL Kế Hoạch: ${fmtVND(r.planCPL)}`;
                                 }
                             }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: colors.grid }, ticks: { color: colors.text, font: { weight: 600 } } },
+                        y: {
+                            grid: { color: colors.grid },
+                            ticks: { color: colors.text, callback: v => fmtShort(v) }
                         }
                     }
                 }
             });
 
-            // 3. Chart 2C: Monthly Trend across Year
+            // 3. Chart 2C: Monthly Trend across Year (Spend or CPL vs Plan)
             const ctxC = document.getElementById('chartMonthlyTrend').getContext('2d');
             const targetList = selProd === 'ALL' ? summaryRows.slice(0, 9) : summaryRows.filter(r => r.name === selProd);
-            document.getElementById('trendChartTitle').textContent = `3. Xu Hướng Chi Tiêu Qua Các Tháng Năm ${year} (${selProd === 'ALL' ? 'Tất cả SP' : selProd})`;
 
             let datasetsC = [];
-            if (trendMode === 'channel') {
+            let isStacked = true;
+
+            if (trendMode === 'cpl') {
+                isStacked = false;
+                document.getElementById('trendChartTitle').textContent = `3. Diễn Biến CPL Thực Tế Qua Các Tháng vs. CPL Kế Hoạch (${selProd === 'ALL' ? 'Các SP có định mức' : selProd})`;
+                const cplTargetList = selProd === 'ALL'
+                    ? summaryRows.filter(r => r.planCPL > 0)
+                    : summaryRows.filter(r => r.name === selProd);
+
+                datasetsC = cplTargetList.map((r, i) => ({
+                    label: `CPL ${r.name} (KH: ${fmtShort(r.planCPL)})`,
+                    data: allMonths.map(m => (r.months[m] && r.months[m].cpl) || null),
+                    type: 'line',
+                    borderColor: PALETTE[i % PALETTE.length],
+                    backgroundColor: PALETTE[i % PALETTE.length],
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    spanGaps: true,
+                    tension: 0.25
+                }));
+
+                if (selProd !== 'ALL' && cplTargetList.length === 1 && cplTargetList[0].planCPL > 0) {
+                    const pVal = cplTargetList[0].planCPL;
+                    datasetsC.push({
+                        label: `Trần CPL Kế Hoạch (${fmtShort(pVal)})`,
+                        data: allMonths.map(() => pVal),
+                        type: 'line',
+                        borderColor: '#ef4444',
+                        borderDash: [6, 6],
+                        borderWidth: 2,
+                        pointRadius: 0
+                    });
+                }
+            } else if (trendMode === 'channel') {
+                document.getElementById('trendChartTitle').textContent = `3. Chi Tiêu Qua Các Tháng Theo Kênh (${selProd === 'ALL' ? 'Tất cả SP' : selProd})`;
                 datasetsC = [
                     {
                         label: 'FB Mess Ads',
@@ -1025,6 +1284,7 @@ html_content = """<!DOCTYPE html>
                     }
                 ];
             } else {
+                document.getElementById('trendChartTitle').textContent = `3. Chi Tiêu Các Sản Phẩm Qua Các Tháng Năm ${year} (${selProd === 'ALL' ? 'Tất cả SP' : selProd})`;
                 datasetsC = targetList.map((r, i) => ({
                     label: r.name,
                     data: allMonths.map(m => (r.months[m] && r.months[m].spend) || 0),
@@ -1035,7 +1295,7 @@ html_content = """<!DOCTYPE html>
 
             if (chartTrendInst) chartTrendInst.destroy();
             chartTrendInst = new Chart(ctxC, {
-                type: 'bar',
+                type: trendMode === 'cpl' ? 'line' : 'bar',
                 data: {
                     labels: allMonths.map(m => `T${m.split('-')[1]}/${m.split('-')[0].slice(2)}`),
                     datasets: datasetsC
@@ -1048,14 +1308,14 @@ html_content = """<!DOCTYPE html>
                         legend: { position: 'top', labels: { color: colors.text, boxWidth: 11, font: { size: 11, weight: 600 } } },
                         tooltip: {
                             callbacks: {
-                                label: (ctx) => `${ctx.dataset.label}: ${fmtVND(ctx.raw)}`
+                                label: (ctx) => ctx.raw !== null ? `${ctx.dataset.label}: ${fmtVND(ctx.raw)}` : ''
                             }
                         }
                     },
                     scales: {
-                        x: { stacked: true, grid: { color: colors.grid }, ticks: { color: colors.text, font: { weight: 600 } } },
+                        x: { stacked: isStacked, grid: { color: colors.grid }, ticks: { color: colors.text, font: { weight: 600 } } },
                         y: {
-                            stacked: true,
+                            stacked: isStacked,
                             grid: { color: colors.grid },
                             ticks: { color: colors.text, callback: v => fmtShort(v) }
                         }
@@ -1069,6 +1329,53 @@ html_content = """<!DOCTYPE html>
             const tbody = document.getElementById('mainTableBody');
             const rows = selProd === 'ALL' ? summaryRows : summaryRows.filter(r => r.name === selProd);
 
+            // 1. Mode: Ma trận CPL 11 tháng vs Kế hoạch
+            if (tableMode === 'cpl_matrix') {
+                document.getElementById('tableModeTitle').textContent = `4. Ma Trận CPL Thực Tế Các Tháng Năm ${year} So Với CPL Kế Hoạch`;
+                thead.innerHTML = `
+                    <tr>
+                        <th>Sản Phẩm</th>
+                        <th>CPL Kế Hoạch</th>
+                        <th>CPL TB Năm ${year}</th>
+                        <th>Cảnh Báo Năm</th>
+                        ${allMonths.map(m => `<th style="text-align:right;">T${m.split('-')[1]}/${m.split('-')[0].slice(2)}</th>`).join('')}
+                    </tr>
+                `;
+
+                const bodyHtml = rows.map(r => {
+                    const planTxt = r.planCPL > 0 ? `<b>${fmtShort(r.planCPL)}</b>` : `<span style="color:var(--text-muted);">--</span>`;
+                    const avgTxt = r.avgYearCPL > 0 ? `<b>${fmtShort(r.avgYearCPL)}</b>` : `--`;
+                    let alertBadge = `<span class="badge b-muted">--</span>`;
+                    if (r.planCPL > 0 && r.avgYearCPL > 0) {
+                        alertBadge = r.isOverPlanAvg
+                            ? `<span class="badge b-down">🚨 Vượt +${r.diffPlanAvgPct.toFixed(0)}% (${r.overPlanMonths}/${r.activeCplMonthsCount}T)</span>`
+                            : `<span class="badge b-up">✅ Đạt ${r.diffPlanAvgPct.toFixed(0)}% (${r.overPlanMonths}/${r.activeCplMonthsCount}T vượt)</span>`;
+                    }
+
+                    const mCells = allMonths.map(m => {
+                        const cplVal = (r.months[m] && r.months[m].cpl) || 0;
+                        if (cplVal === 0) return `<td style="text-align:right; color:var(--text-muted);">--</td>`;
+                        const isOverM = r.planCPL > 0 && cplVal > r.planCPL;
+                        const color = r.planCPL > 0 ? (isOverM ? '#f87171' : '#34d399') : 'var(--text-primary)';
+                        return `<td style="text-align:right; color:${color}; font-weight:700;">${fmtShort(cplVal)}${isOverM ? ' 🚨' : ''}</td>`;
+                    }).join('');
+
+                    return `
+                        <tr class="${selProd === r.name ? 'active-row' : ''}" onclick="selectProduct('${r.name}')" style="cursor:pointer;">
+                            <td><b>📦 ${r.name}</b></td>
+                            <td>${planTxt}</td>
+                            <td>${avgTxt}</td>
+                            <td>${alertBadge}</td>
+                            ${mCells}
+                        </tr>
+                    `;
+                }).join('');
+
+                tbody.innerHTML = bodyHtml;
+                return;
+            }
+
+            // 2. Mode: Ma trận Chi tiêu 11 tháng
             if (tableMode === 'matrix') {
                 document.getElementById('tableModeTitle').textContent = `4. Ma Trận Chi Tiêu Sản Phẩm Qua Các Tháng Năm ${year}`;
                 thead.innerHTML = `
@@ -1108,34 +1415,44 @@ html_content = """<!DOCTYPE html>
                 return;
             }
 
-            // Mode: compare
-            document.getElementById('tableModeTitle').textContent = `4. Bảng Ngân Sách Sản Phẩm Năm ${year} & So Sánh ${prevM} ➔ ${currM}`;
+            // 3. Mode: Compare 2 Months + CPL Plan vs Actual
+            document.getElementById('tableModeTitle').textContent = `4. Bảng Ngân Sách Sản Phẩm Năm ${year}, So Sánh ${prevM} ➔ ${currM} & Cảnh Báo CPL Kế Hoạch`;
             thead.innerHTML = `
                 <tr>
                     <th>Sản Phẩm</th>
-                    <th>Lũy Kế Năm ${year}</th>
+                    <th>Lũy Kế ${year}</th>
                     <th>% Tỷ Trọng</th>
                     <th>Tháng Trước (${prevM})</th>
                     <th>Tháng Hiện Tại (${currM})</th>
-                    <th>Chênh Lệch</th>
-                    <th>Δ% Tháng</th>
+                    <th>Δ% Chi Tiêu</th>
                     <th>Data (${prevM}➔${currM})</th>
+                    <th>CPL Kế Hoạch</th>
+                    <th>CPL TB ${year}</th>
                     <th>CPL (${prevM}➔${currM})</th>
-                    <th>HĐ (${prevM}➔${currM})</th>
-                    <th>Trạng Thái</th>
+                    <th>Cảnh Báo CPL</th>
                 </tr>
             `;
 
             const bodyHtml = rows.map(r => {
-                let badge = `<span class="badge b-muted">Tạm dừng</span>`;
-                if (r.mc.spend > 0 || r.mp.spend > 0) {
-                    if (r.mc.spend > 0 && r.mp.spend === 0) badge = `<span class="badge b-info">🆕 Mới chạy</span>`;
-                    else if (r.deltaSpendPct > 10) badge = `<span class="badge b-warn">🔼 Tăng chi</span>`;
-                    else if (r.deltaSpendPct < -15) badge = `<span class="badge b-muted">🔽 Giảm chi</span>`;
-                    else badge = `<span class="badge b-up">✅ Ổn định</span>`;
-                }
-
                 const dBadge = r.deltaSpendPct > 0 ? 'b-warn' : (r.deltaSpendPct < 0 ? 'b-info' : 'b-muted');
+                const planStr = r.planCPL > 0 ? `<b>${fmtShort(r.planCPL)}</b>` : `<span style="color:var(--text-muted);">--</span>`;
+                const avgCplColor = r.planCPL > 0 ? (r.isOverPlanAvg ? '#f87171' : '#34d399') : 'var(--text-primary)';
+                const currCplColor = r.planCPL > 0 && r.cplCurr > 0 ? (r.isOverPlanCurr ? '#f87171' : '#34d399') : 'var(--text-primary)';
+
+                let cplAlertBadge = `<span class="badge b-muted">Chưa đặt KH</span>`;
+                if (r.planCPL > 0) {
+                    if (r.cplCurr > 0) {
+                        cplAlertBadge = r.isOverPlanCurr
+                            ? `<span class="badge b-down">🚨 Vượt KH +${r.diffPlanCurrPct.toFixed(1)}% (${currM})</span>`
+                            : `<span class="badge b-up">✅ Đạt KH ${r.diffPlanCurrPct.toFixed(1)}% (${currM})</span>`;
+                    } else if (r.avgYearCPL > 0) {
+                        cplAlertBadge = r.isOverPlanAvg
+                            ? `<span class="badge b-down">🚨 Vượt KH +${r.diffPlanAvgPct.toFixed(1)}% (TB Năm)</span>`
+                            : `<span class="badge b-up">✅ Đạt KH ${r.diffPlanAvgPct.toFixed(1)}% (TB Năm)</span>`;
+                    } else {
+                        cplAlertBadge = `<span class="badge b-muted">Chưa có Data</span>`;
+                    }
+                }
 
                 return `
                     <tr class="${selProd === r.name ? 'active-row' : ''}" onclick="selectProduct('${r.name}')" style="cursor:pointer;">
@@ -1147,27 +1464,25 @@ html_content = """<!DOCTYPE html>
                         </td>
                         <td>${fmtVND(r.mp.spend)}</td>
                         <td><b style="color:#34d399;">${fmtVND(r.mc.spend)}</b></td>
-                        <td style="color:${r.diffSpend >= 0 ? '#fbbf24' : '#94a3b8'}; font-weight:700;">
-                            ${r.diffSpend >= 0 ? '+' : ''}${fmtShort(r.diffSpend)}
-                        </td>
                         <td><span class="badge ${dBadge}">${r.deltaSpendPct >= 0 ? '+' : ''}${r.deltaSpendPct.toFixed(1)}%</span></td>
                         <td>${r.mp.data} ➔ <b>${r.mc.data}</b></td>
-                        <td>${r.cplPrev > 0 ? fmtShort(r.cplPrev) : '--'} ➔ <b>${r.cplCurr > 0 ? fmtShort(r.cplCurr) : '--'}</b></td>
-                        <td>${r.mp.hd} ➔ <b style="color:#34d399;">${r.mc.hd}</b></td>
-                        <td>${badge}</td>
+                        <td>${planStr}</td>
+                        <td style="color:${avgCplColor}; font-weight:800;">${r.avgYearCPL > 0 ? fmtShort(r.avgYearCPL) : '--'}</td>
+                        <td>${r.cplPrev > 0 ? fmtShort(r.cplPrev) : '--'} ➔ <b style="color:${currCplColor};">${r.cplCurr > 0 ? fmtShort(r.cplCurr) : '--'}</b></td>
+                        <td>${cplAlertBadge}</td>
                     </tr>
                 `;
             }).join('');
 
             const totY = rows.reduce((s, r) => s + r.yearSpend, 0);
+            const totYWithData = rows.reduce((s, r) => s + r.yearSpendWithData, 0);
+            const totYData = rows.reduce((s, r) => s + r.yearData, 0);
             const totP = rows.reduce((s, r) => s + r.mp.spend, 0);
             const totC = rows.reduce((s, r) => s + r.mc.spend, 0);
-            const totDiff = totC - totP;
             const totDelta = totP > 0 ? ((totC - totP) / totP * 100) : 0;
             const totDataP = rows.reduce((s, r) => s + r.mp.data, 0);
             const totDataC = rows.reduce((s, r) => s + r.mc.data, 0);
-            const totHDP = rows.reduce((s, r) => s + r.mp.hd, 0);
-            const totHDC = rows.reduce((s, r) => s + r.mc.hd, 0);
+            const overCount = rows.filter(r => r.planCPL > 0 && (r.isOverPlanCurr || r.isOverPlanAvg)).length;
 
             tbody.innerHTML = bodyHtml + `
                 <tr class="total-row">
@@ -1176,12 +1491,12 @@ html_content = """<!DOCTYPE html>
                     <td>${selProd === 'ALL' ? '100.0%' : rows[0]?.shareYear.toFixed(1) + '%'}</td>
                     <td>${fmtVND(totP)}</td>
                     <td>${fmtVND(totC)}</td>
-                    <td>${totDiff >= 0 ? '+' : ''}${fmtShort(totDiff)}</td>
                     <td>${totDelta >= 0 ? '+' : ''}${totDelta.toFixed(1)}%</td>
                     <td>${totDataP} ➔ ${totDataC}</td>
+                    <td>--</td>
+                    <td>${totYData > 0 ? fmtShort(totYWithData / totYData) : '--'}</td>
                     <td>${totDataP > 0 ? fmtShort(totP/totDataP) : '--'} ➔ ${totDataC > 0 ? fmtShort(totC/totDataC) : '--'}</td>
-                    <td>${totHDP} ➔ ${totHDC}</td>
-                    <td>Tổng ${rows.length} SP</td>
+                    <td>🚨 ${overCount} SP Vượt CPL KH</td>
                 </tr>
             `;
         }
@@ -1225,18 +1540,20 @@ html_content = """<!DOCTYPE html>
                 "% Tỷ trọng năm": +r.shareYear.toFixed(2),
                 [`Chi tiêu ${prevM}`]: Math.round(r.mp.spend),
                 [`Chi tiêu ${currM}`]: Math.round(r.mc.spend),
-                "Chênh lệch": Math.round(r.diffSpend),
                 "Δ% Tháng": +r.deltaSpendPct.toFixed(2),
                 [`Data ${prevM}`]: r.mp.data,
                 [`Data ${currM}`]: r.mc.data,
-                [`HĐ ${prevM}`]: r.mp.hd,
-                [`HĐ ${currM}`]: r.mc.hd
+                "CPL Kế Hoạch": r.planCPL || "",
+                "CPL TB Năm": r.avgYearCPL || "",
+                [`CPL ${prevM}`]: r.cplPrev || "",
+                [`CPL ${currM}`]: r.cplCurr || "",
+                "Cảnh báo CPL": r.planCPL > 0 ? ((r.cplCurr > 0 ? r.isOverPlanCurr : r.isOverPlanAvg) ? "VƯỢT KẾ HOẠCH" : "ĐẠT KẾ HOẠCH") : ""
             }));
             const csv = Papa.unparse(data);
             const blob = new Blob(["\\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `Ngan_Sach_San_Pham_${prevM}_vs_${currM}.csv`;
+            a.download = `Ngan_Sach_CPL_San_Pham_${prevM}_vs_${currM}.csv`;
             a.click();
         }
 
@@ -1259,5 +1576,5 @@ html_content = """<!DOCTYPE html>
 with open(html_path, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print(f"✅ Đã biên dịch thành công Dashboard tại: {html_path}")
+print(f"✅ Đã biên dịch thành công Dashboard kèm CPL Kế hoạch & Cảnh báo tại: {html_path}")
 print(f"Dung lượng file: {os.path.getsize(html_path) / 1024:.1f} KB")
