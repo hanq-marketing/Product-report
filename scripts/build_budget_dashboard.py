@@ -492,10 +492,98 @@ html_content = """<!DOCTYPE html>
         }
 
         .mini-bar-fill { height: 100%; border-radius: 99px; background: #6366f1; }
+
+        /* ═══════════ TỐI ƯU HIỂN THỊ ═══════════ */
+        html { scroll-behavior: smooth; }
+
+        /* Thanh lọc dính trên cùng khi cuộn */
+        .sticky-head {
+            position: sticky;
+            top: 0;
+            z-index: 60;
+            padding-top: 0.6rem;
+            margin-top: -0.6rem;
+            background: linear-gradient(to bottom, var(--bg-base) 82%, transparent);
+        }
+        .sticky-head .topbar { backdrop-filter: blur(10px); margin-bottom: 0.5rem; }
+        .sticky-head .pills-bar { margin-bottom: 0.6rem; }
+
+        /* Điều hướng nhanh giữa các section */
+        .sec-nav { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-left: auto; }
+        .sec-nav a {
+            font-size: 0.7rem; font-weight: 700; text-decoration: none;
+            color: var(--text-secondary); padding: 0.22rem 0.6rem;
+            border-radius: var(--radius-full); border: 1px solid var(--border-color);
+            background: var(--bg-surface-solid);
+        }
+        .sec-nav a:hover { color: var(--text-primary); border-color: var(--primary); }
+        .section-box, #cplAlertStrip { scroll-margin-top: 150px; }
+
+        /* KPI co giãn theo màn hình, số không bị tràn */
+        .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)) !important; }
+        .kpi-num { font-size: clamp(1.05rem, 1.35vw, 1.38rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .kpi-name { gap: 0.4rem; }
+        .kpi-name span:last-child { text-transform: none; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+        .kpi-foot { gap: 0.4rem; flex-wrap: wrap; }
+
+        /* Bảng: header dính, cột Sản phẩm dính, zebra, số căn phải */
+        .table-wrap { max-height: 560px; overflow: auto; }
+        .table-wrap thead th { position: sticky; top: 0; z-index: 3; }
+        .table-wrap th:first-child,
+        .table-wrap td:first-child {
+            position: sticky; left: 0; z-index: 2;
+            background: var(--bg-surface-solid);
+            box-shadow: 1px 0 0 var(--border-color);
+            min-width: 150px;
+        }
+        .table-wrap thead th:first-child { z-index: 4; }
+        .table-wrap td:not(:first-child), .table-wrap th:not(:first-child) { text-align: right; }
+        .table-wrap tbody tr:nth-child(even):not(.total-row) td:not(:first-child) { background: rgba(148, 163, 184, 0.045); }
+        .table-wrap tbody tr:hover td:not(:first-child) { background: rgba(99, 102, 241, 0.08); }
+        .table-wrap tbody tr.active-row td { background: rgba(99, 102, 241, 0.16); }
+        .table-wrap tbody tr.active-row td:first-child { box-shadow: inset 3px 0 0 var(--primary), 1px 0 0 var(--border-color); }
+        .table-wrap tr.total-row td { position: sticky; bottom: 0; z-index: 2; background: var(--bg-surface-solid); }
+        .table-wrap tr.total-row td:first-child { z-index: 3; }
+        #perfTable td { vertical-align: top; padding: 0.5rem 0.65rem; }
+        #perfTable th:not(:first-child) { min-width: 92px; }
+
+        /* Chú thích cho bảng hiệu suất */
+        .legend-row { display: flex; gap: 0.9rem; flex-wrap: wrap; font-size: 0.71rem; color: var(--text-secondary); margin-bottom: 0.6rem; }
+        .legend-row b { color: var(--text-primary); }
+        .lg-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+        /* Light theme: tăng tương phản màu chữ */
+        [data-theme="light"] .b-up { color: #047857; }
+        [data-theme="light"] .b-down { color: #b91c1c; }
+        [data-theme="light"] .b-warn { color: #b45309; }
+        [data-theme="light"] .b-info { color: #0e7490; }
+        [data-theme="light"] .mini-bar { background: rgba(15, 23, 42, 0.1); }
+        [data-theme="light"] .tag-sec { color: #4f46e5; }
+
+        /* Màn hình nhỏ */
+        @media (max-width: 900px) {
+            .sticky-head { position: static; background: none; }
+            .sec-nav { display: none; }
+            .container { padding: 0.6rem; }
+            .section-box { padding: 0.85rem; }
+            table { font-size: 0.74rem; }
+            .canvas-wrap { height: 250px !important; }
+            .top-controls { width: 100%; }
+            .top-controls .select-sm { flex: 1 1 140px; }
+        }
+
+        /* In ấn / xuất PDF */
+        @media print {
+            .sticky-head { position: static; }
+            .top-controls, .sec-nav, .switch-group, .btn { display: none !important; }
+            .table-wrap { max-height: none; overflow: visible; }
+            .section-box { break-inside: avoid; box-shadow: none; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="sticky-head">
         <!-- ─── TOP BAR ─── -->
         <div class="topbar">
             <div class="brand">
@@ -525,12 +613,21 @@ html_content = """<!DOCTYPE html>
         </div>
 
         <!-- ─── QUICK PRODUCT PILLS ─── -->
-        <div class="pills-bar" id="productPills"></div>
+        <div class="pills-bar">
+            <div id="productPills" style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;"></div>
+            <nav class="sec-nav">
+                <a href="#sec1">① Tổng quan</a>
+                <a href="#sec2">② Biểu đồ & Bảng NS</a>
+                <a href="#cplAlertStrip">🎯 Cảnh báo CPL</a>
+                <a href="#sec3">③ Hiệu suất tháng</a>
+            </nav>
+        </div>
+        </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════════
              SECTION 1: TỔNG CHI TIÊU NĂM 2026, SO SÁNH THÁNG & ĐỐI CHIẾU CPL KẾ HOẠCH
              ═══════════════════════════════════════════════════════════════════════════ -->
-        <div class="section-box">
+        <div class="section-box" id="sec1">
             <div class="section-bar">
                 <div class="section-label">
                     <span class="tag-sec">SECTION 1</span>
@@ -548,7 +645,7 @@ html_content = """<!DOCTYPE html>
         <!-- ═══════════════════════════════════════════════════════════════════════════
              SECTION 2: BIỂU ĐỒ CHI TIÊU & ĐỐI SÁNH CPL KẾ HOẠCH CÁC SẢN PHẨM
              ═══════════════════════════════════════════════════════════════════════════ -->
-        <div class="section-box">
+        <div class="section-box" id="sec2">
             <div class="section-bar">
                 <div class="section-label">
                     <span class="tag-sec">SECTION 2</span>
@@ -629,7 +726,7 @@ html_content = """<!DOCTYPE html>
         <!-- ═══════════════════════════════════════════════════════════════════════════
              SECTION 3: BẢNG HIỆU SUẤT CPL THỰC TẾ vs. KH, TỶ LỆ CĐ & CHI PHÍ / HĐ THEO THÁNG
              ═══════════════════════════════════════════════════════════════════════════ -->
-        <div class="section-box">
+        <div class="section-box" id="sec3">
             <div class="section-bar">
                 <div class="section-label">
                     <span class="tag-sec">SECTION 3</span>
@@ -644,6 +741,15 @@ html_content = """<!DOCTYPE html>
                     </div>
                     <button class="btn" style="height:28px; padding:0 0.6rem; font-size:0.72rem;" onclick="exportPerfCSV()">📥 Xuất CSV</button>
                 </div>
+            </div>
+
+            <div class="legend-row">
+                <span><span class="lg-dot" style="background:#34d399;"></span><b>Xanh</b> = CPL đạt kế hoạch</span>
+                <span><span class="lg-dot" style="background:#f87171;"></span><b>Đỏ 🚨</b> = CPL vượt kế hoạch</span>
+                <span><b>D/M</b> = Data / Mess</span>
+                <span><b>HĐ/D</b> = Hợp đồng / Data</span>
+                <span><span class="lg-dot" style="background:#22d3ee;"></span><b>CP/HĐ</b> = Chi phí / Hợp đồng (số HĐ)</span>
+                <span style="color:var(--text-muted);">• Bấm vào dòng để lọc sản phẩm</span>
             </div>
 
             <div class="table-wrap">
@@ -1619,7 +1725,7 @@ html_content = """<!DOCTYPE html>
 
                     return `
                         <tr class="${selProd === r.name ? 'active-row' : ''}" onclick="selectProduct('${r.name}')" style="cursor:pointer;">
-                            <td><b>📦 ${r.name}</b><div style="font-size:0.68rem; color:var(--text-muted); font-weight:500;">Dòng 1: CPL • Dòng 2: D/M • HĐ/D • Dòng 3: CP/HĐ</div></td>
+                            <td><b>📦 ${r.name}</b></td>
                             <td style="text-align:right;">${planTxt}</td>
                             ${avgCell}
                             ${mCells}
