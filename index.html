@@ -696,24 +696,57 @@
                         <button class="switch-btn" id="btnPerfCr" onclick="setPerfTableMode('cr')">🔄 Tỷ Lệ Chuyển Đổi</button>
                         <button class="switch-btn" id="btnPerfCpHd" onclick="setPerfTableMode('cphd')">📝 Chi Phí / HĐ</button>
                     </div>
+                    <div class="switch-group">
+                        <button class="switch-btn active" id="btnPerfViewChart" onclick="setPerfView('chart')">📈 Biểu đồ</button>
+                        <button class="switch-btn" id="btnPerfViewTable" onclick="setPerfView('table')">📋 Bảng</button>
+                        <button class="switch-btn" id="btnPerfViewBoth" onclick="setPerfView('both')">Cả hai</button>
+                    </div>
                     <button class="btn" style="height:28px; padding:0 0.6rem; font-size:0.72rem;" onclick="exportPerfCSV()">📥 Xuất CSV</button>
                 </div>
             </div>
 
-            <div class="legend-row">
-                <span><span class="lg-dot" style="background:#34d399;"></span><b>Xanh</b> = CPL đạt kế hoạch</span>
-                <span><span class="lg-dot" style="background:#f87171;"></span><b>Đỏ 🚨</b> = CPL vượt kế hoạch</span>
-                <span><b>D/M</b> = Data / Mess</span>
-                <span><b>HĐ/D</b> = Hợp đồng / Data</span>
-                <span><span class="lg-dot" style="background:#22d3ee;"></span><b>CP/HĐ</b> = Chi phí / Hợp đồng (số HĐ)</span>
-                <span style="color:var(--text-muted);">• Bấm vào dòng để lọc sản phẩm</span>
+            <div id="perfChartsBlock">
+                <div class="charts-row" style="grid-template-columns: 1fr 1fr;">
+                    <div class="chart-panel" id="perfPanelA">
+                        <div class="chart-head">
+                            <span id="perfChartATitle">1. Diễn Biến CPL Thực Tế vs. CPL Kế Hoạch Theo Tháng</span>
+                            <span style="font-size:0.71rem; color:var(--text-muted); font-weight:600;">Đường đứt nét = Trần KH</span>
+                        </div>
+                        <div class="canvas-wrap"><canvas id="chartPerfA"></canvas></div>
+                    </div>
+                    <div class="chart-panel" id="perfPanelB">
+                        <div class="chart-head">
+                            <span id="perfChartBTitle">2. Tỷ Lệ Chuyển Đổi Theo Tháng (Data/Mess % & HĐ/Data %)</span>
+                            <span style="font-size:0.71rem; color:var(--text-muted); font-weight:600;">Cột = Data/Mess • Đường = HĐ/Data</span>
+                        </div>
+                        <div class="canvas-wrap"><canvas id="chartPerfB"></canvas></div>
+                    </div>
+                </div>
+                <div class="chart-panel" id="perfPanelC" style="margin-bottom: 1rem;">
+                    <div class="chart-head">
+                        <span id="perfChartCTitle">3. Chi Phí / Hợp Đồng (CP/HĐ) & Số Lượng Hợp Đồng Theo Tháng</span>
+                        <span style="font-size:0.71rem; color:var(--text-muted); font-weight:600;">Cột = CP/HĐ (VNĐ) • Đường = Số lượng HĐ</span>
+                    </div>
+                    <div class="canvas-wrap" style="height: 280px;"><canvas id="chartPerfC"></canvas></div>
+                </div>
             </div>
 
-            <div class="table-wrap">
-                <table id="perfTable">
-                    <thead id="perfTableHead"></thead>
-                    <tbody id="perfTableBody"></tbody>
-                </table>
+            <div id="perfTableBlock" style="display:none;">
+                <div class="legend-row">
+                    <span><span class="lg-dot" style="background:#34d399;"></span><b>Xanh</b> = CPL đạt kế hoạch</span>
+                    <span><span class="lg-dot" style="background:#f87171;"></span><b>Đỏ 🚨</b> = CPL vượt kế hoạch</span>
+                    <span><b>D/M</b> = Data / Mess</span>
+                    <span><b>HĐ/D</b> = Hợp đồng / Data</span>
+                    <span><span class="lg-dot" style="background:#22d3ee;"></span><b>CP/HĐ</b> = Chi phí / Hợp đồng (số HĐ)</span>
+                    <span style="color:var(--text-muted);">• Bấm vào dòng để lọc sản phẩm</span>
+                </div>
+
+                <div class="table-wrap">
+                    <table id="perfTable">
+                        <thead id="perfTableHead"></thead>
+                        <tbody id="perfTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -743,9 +776,13 @@
         let chartCompareInst = null;
         let chartCplInst = null;
         let chartTrendInst = null;
+        let chartPerfAInst = null;
+        let chartPerfBInst = null;
+        let chartPerfCInst = null;
         let currentSummaryRows = [];
         let currentAllMonths = [];
         let perfTableMode = 'all';
+        let perfView = 'chart';
 
         const PALETTE = [
             '#6366f1', '#10b981', '#06b6d4', '#f59e0b', '#ec4899',
@@ -911,6 +948,16 @@
             renderAll();
         }
 
+        function setPerfView(v) {
+            perfView = v;
+            document.getElementById('btnPerfViewChart').classList.toggle('active', v === 'chart');
+            document.getElementById('btnPerfViewTable').classList.toggle('active', v === 'table');
+            document.getElementById('btnPerfViewBoth').classList.toggle('active', v === 'both');
+            document.getElementById('perfChartsBlock').style.display = (v === 'chart' || v === 'both') ? 'block' : 'none';
+            document.getElementById('perfTableBlock').style.display = (v === 'table' || v === 'both') ? 'block' : 'none';
+            renderAll();
+        }
+
         function renderAll() {
             const year = document.getElementById('yearSelect').value;
             const selProd = document.getElementById('productSelect').value;
@@ -1025,6 +1072,7 @@
             renderSection1KPIs(kpiRows, selProd, year, prevM, currM, sysYearSpend);
             renderSection2Charts(summaryRows, allMonths, selProd, year, prevM, currM);
             renderMainTable(summaryRows, allMonths, selProd, year, prevM, currM);
+            renderPerfCharts(summaryRows, allMonths, selProd, year);
             renderPerfTable(summaryRows, allMonths, selProd, year);
         }
 
@@ -1626,6 +1674,249 @@
                     <td>🚨 ${overCount} SP Vượt CPL KH</td>
                 </tr>
             `;
+        }
+
+        function renderPerfCharts(summaryRows, allMonths, selProd, year) {
+            const colors = getThemeColors();
+            const rows = selProd === 'ALL' ? summaryRows : summaryRows.filter(r => r.name === selProd);
+            const mLabels = allMonths.map(m => `T${m.split('-')[1]}/${m.split('-')[0].slice(2)}`);
+            const scopeLbl = selProd === 'ALL' ? 'Toàn Hệ Thống' : selProd;
+
+            // Điều chỉnh hiển thị các panel biểu đồ theo tab đang chọn
+            const pA = document.getElementById('perfPanelA');
+            const pB = document.getElementById('perfPanelB');
+            const pC = document.getElementById('perfPanelC');
+            const rowTop = pA.parentElement;
+
+            if (perfTableMode === 'all') {
+                rowTop.style.display = 'grid';
+                rowTop.style.gridTemplateColumns = '1fr 1fr';
+                pA.style.display = 'block';
+                pB.style.display = 'block';
+                pC.style.display = 'block';
+            } else if (perfTableMode === 'cpl') {
+                rowTop.style.display = 'grid';
+                rowTop.style.gridTemplateColumns = '1fr';
+                pA.style.display = 'block';
+                pB.style.display = 'none';
+                pC.style.display = 'none';
+            } else if (perfTableMode === 'cr') {
+                rowTop.style.display = 'grid';
+                rowTop.style.gridTemplateColumns = '1fr';
+                pA.style.display = 'none';
+                pB.style.display = 'block';
+                pC.style.display = 'none';
+            } else if (perfTableMode === 'cphd') {
+                rowTop.style.display = 'none';
+                pC.style.display = 'block';
+            }
+
+            // 1. Biểu đồ 3A: CPL Thực Tế vs. CPL Kế Hoạch Theo Tháng
+            document.getElementById('perfChartATitle').textContent = `1. CPL Thực Tế vs. Kế Hoạch Theo Tháng (${scopeLbl})`;
+            const ctxPA = document.getElementById('chartPerfA').getContext('2d');
+            if (chartPerfAInst) chartPerfAInst.destroy();
+
+            let datasetsPA = [];
+            if (selProd !== 'ALL' && rows.length === 1) {
+                const r = rows[0];
+                const mCpls = allMonths.map(m => (r.months[m] && r.months[m].cpl) || 0);
+                datasetsPA.push({
+                    type: 'bar',
+                    label: `CPL Thực Tế (${r.name})`,
+                    data: mCpls,
+                    backgroundColor: mCpls.map(v => (r.planCPL > 0 && v > r.planCPL) ? 'rgba(239, 68, 68, 0.82)' : 'rgba(16, 185, 129, 0.82)'),
+                    borderRadius: 6,
+                    order: 2
+                });
+                if (r.planCPL > 0) {
+                    datasetsPA.push({
+                        type: 'line',
+                        label: `CPL Kế Hoạch (${fmtShort(r.planCPL)})`,
+                        data: allMonths.map(() => r.planCPL),
+                        borderColor: '#fbbf24',
+                        backgroundColor: '#fbbf24',
+                        borderDash: [6, 6],
+                        borderWidth: 2.5,
+                        pointRadius: 3,
+                        order: 1
+                    });
+                }
+            } else {
+                const cplRows = summaryRows.filter(r => r.planCPL > 0);
+                datasetsPA = cplRows.map((r, i) => ({
+                    type: 'line',
+                    label: `${r.name} (KH: ${fmtShort(r.planCPL)})`,
+                    data: allMonths.map(m => (r.months[m] && r.months[m].cpl) || null),
+                    borderColor: PALETTE[i % PALETTE.length],
+                    backgroundColor: PALETTE[i % PALETTE.length],
+                    borderWidth: 2.2,
+                    pointRadius: 3.5,
+                    spanGaps: true,
+                    tension: 0.25
+                }));
+            }
+
+            chartPerfAInst = new Chart(ctxPA, {
+                type: 'bar',
+                data: { labels: mLabels, datasets: datasetsPA },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { color: colors.text, boxWidth: 11, font: { size: 10.5, weight: 600 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ctx.raw ? `${ctx.dataset.label}: ${fmtVND(ctx.raw)}` : ''
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: colors.grid }, ticks: { color: colors.text, font: { weight: 600 } } },
+                        y: { grid: { color: colors.grid }, ticks: { color: colors.text, callback: v => fmtShort(v) } }
+                    }
+                }
+            });
+
+            // 2. Biểu đồ 3B: Tỷ Lệ Chuyển Đổi (Data/Mess % & HĐ/Data %) Theo Tháng
+            document.getElementById('perfChartBTitle').textContent = `2. Tỷ Lệ Chuyển Đổi Theo Tháng (${scopeLbl})`;
+            const dmRates = allMonths.map(m => {
+                const ms = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].mess) || 0), 0);
+                const dt = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].data) || 0), 0);
+                return ms > 0 ? +(dt / ms * 100).toFixed(1) : 0;
+            });
+            const hdRates = allMonths.map(m => {
+                const dt = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].data) || 0), 0);
+                const hd = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].hd) || 0), 0);
+                return dt > 0 ? +(hd / dt * 100).toFixed(1) : 0;
+            });
+
+            const ctxPB = document.getElementById('chartPerfB').getContext('2d');
+            if (chartPerfBInst) chartPerfBInst.destroy();
+            chartPerfBInst = new Chart(ctxPB, {
+                type: 'bar',
+                data: {
+                    labels: mLabels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Tỷ lệ Data / Mess (%)',
+                            data: dmRates,
+                            backgroundColor: 'rgba(99, 102, 241, 0.78)',
+                            borderRadius: 6,
+                            yAxisID: 'yDm',
+                            order: 2
+                        },
+                        {
+                            type: 'line',
+                            label: 'Tỷ lệ Chốt HĐ / Data (%)',
+                            data: hdRates,
+                            borderColor: '#10b981',
+                            backgroundColor: '#10b981',
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            tension: 0.25,
+                            yAxisID: 'yHd',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { color: colors.text, boxWidth: 11, font: { size: 11, weight: 600 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}%`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: colors.grid }, ticks: { color: colors.text, font: { weight: 600 } } },
+                        yDm: {
+                            position: 'left',
+                            grid: { color: colors.grid },
+                            ticks: { color: '#818cf8', callback: v => v + '%' }
+                        },
+                        yHd: {
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#34d399', callback: v => v + '%' }
+                        }
+                    }
+                }
+            });
+
+            // 3. Biểu đồ 3C: Chi Phí / Hợp Đồng (CP/HĐ) & Số Lượng HĐ Theo Tháng
+            document.getElementById('perfChartCTitle').textContent = `3. Chi Phí / Hợp Đồng (CP/HĐ) & Số Lượng HĐ Theo Tháng (${scopeLbl})`;
+            const mCpHd = allMonths.map(m => {
+                const sp = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].spend) || 0), 0);
+                const hd = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].hd) || 0), 0);
+                return hd > 0 ? Math.round(sp / hd) : 0;
+            });
+            const mHdCounts = allMonths.map(m => rows.reduce((s, r) => s + ((r.months[m] && r.months[m].hd) || 0), 0));
+
+            const ctxPC = document.getElementById('chartPerfC').getContext('2d');
+            if (chartPerfCInst) chartPerfCInst.destroy();
+            chartPerfCInst = new Chart(ctxPC, {
+                type: 'bar',
+                data: {
+                    labels: mLabels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Chi Phí / HĐ (VNĐ)',
+                            data: mCpHd,
+                            backgroundColor: 'rgba(6, 182, 212, 0.78)',
+                            borderRadius: 6,
+                            yAxisID: 'yCpHd',
+                            order: 2
+                        },
+                        {
+                            type: 'line',
+                            label: 'Số Lượng Hợp Đồng (HĐ)',
+                            data: mHdCounts,
+                            borderColor: '#f59e0b',
+                            backgroundColor: '#f59e0b',
+                            borderWidth: 2.5,
+                            pointRadius: 4.5,
+                            tension: 0.25,
+                            yAxisID: 'yHdCount',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { color: colors.text, boxWidth: 11, font: { size: 11, weight: 600 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ctx.dataset.yAxisID === 'yHdCount'
+                                    ? `${ctx.dataset.label}: ${fmtNum(ctx.raw)} HĐ`
+                                    : `${ctx.dataset.label}: ${fmtVND(ctx.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: colors.grid }, ticks: { color: colors.text, font: { weight: 600 } } },
+                        yCpHd: {
+                            position: 'left',
+                            grid: { color: colors.grid },
+                            ticks: { color: '#22d3ee', callback: v => fmtShort(v) }
+                        },
+                        yHdCount: {
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#fbbf24', precision: 0, callback: v => v + ' HĐ' }
+                        }
+                    }
+                }
+            });
         }
 
         function renderPerfTable(summaryRows, allMonths, selProd, year) {
