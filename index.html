@@ -279,14 +279,14 @@
             font-weight: 800;
         }
 
-        /* ─── SECTION 1: 5 COMPACT KPI CARDS ─── */
+        /* ─── SECTION 1: 6 COMPACT KPI CARDS ─── */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 0.8rem;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.75rem;
         }
 
-        @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1380px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 700px) { .kpi-grid { grid-template-columns: 1fr; } }
 
         .kpi-box {
@@ -484,9 +484,6 @@
         <!-- ─── QUICK PRODUCT PILLS ─── -->
         <div class="pills-bar" id="productPills"></div>
 
-        <!-- ─── CPL ALERT STRIP (CẢNH BÁO SẢN PHẨM VƯỢT CPL KẾ HOẠCH) ─── -->
-        <div class="cpl-alert-strip" id="cplAlertStrip"></div>
-
         <!-- ═══════════════════════════════════════════════════════════════════════════
              SECTION 1: TỔNG CHI TIÊU NĂM 2026, SO SÁNH THÁNG & ĐỐI CHIẾU CPL KẾ HOẠCH
              ═══════════════════════════════════════════════════════════════════════════ -->
@@ -582,6 +579,9 @@
                 </table>
             </div>
         </div>
+
+        <!-- ─── CPL ALERT STRIP (CẢNH BÁO SẢN PHẨM VƯỢT CPL KẾ HOẠCH - ĐƯA XUỐNG DƯỚI) ─── -->
+        <div class="cpl-alert-strip" id="cplAlertStrip" style="margin-top: 1.15rem; margin-bottom: 0;"></div>
     </div>
 
     <script>
@@ -962,6 +962,8 @@
             const compareCPL = cCPL > 0 ? cCPL : yCPL;
             const cplVsPlanPct = (planVal > 0 && compareCPL > 0) ? ((compareCPL - planVal) / planVal * 100) : 0;
             const isOver = planVal > 0 && compareCPL > planVal;
+            const yCostPerHD = yHD > 0 ? Math.round(ySpend / yHD) : 0;
+            const cCostPerHD = cHD > 0 ? Math.round(cSpend / cHD) : 0;
 
             const scope = selProd === 'ALL' ? `Tất cả sản phẩm` : selProd;
             document.getElementById('sec1Title').textContent = `Tổng Chi Tiêu Năm ${year} (${scope}) • So Sánh ${prevM} ➔ ${currM} & Định Mức CPL`;
@@ -1013,6 +1015,15 @@
                     <div class="kpi-foot">
                         <span>TB Năm: <b>${yCPL > 0 ? fmtShort(yCPL) : '--'}</b></span>
                         <span>${planVal > 0 && compareCPL > 0 ? `<b style="color:${isOver ? '#f87171' : '#34d399'};">${isOver ? '🚨 Vượt +' : '✅ Đạt '}${cplVsPlanPct.toFixed(1)}%</b>` : '--'}</span>
+                    </div>
+                </div>
+
+                <div class="kpi-box" style="--accent: #06b6d4;">
+                    <div class="kpi-name"><span>📝 Hợp Đồng & CP/HĐ</span> <span>Năm ${year}</span></div>
+                    <div class="kpi-num" style="color:#22d3ee;">${fmtNum(yHD)} HĐ</div>
+                    <div class="kpi-foot">
+                        <span>CP/HĐ Năm: <b>${yCostPerHD > 0 ? fmtShort(yCostPerHD) : '--'}</b></span>
+                        <span>${currM}: <b>${cHD} HĐ (${cCostPerHD > 0 ? fmtShort(cCostPerHD) : '--'})</b></span>
                     </div>
                 </div>
             `;
@@ -1383,6 +1394,9 @@
                     <th>Tháng Hiện Tại (${currM})</th>
                     <th>Δ% Chi Tiêu</th>
                     <th>Data (${prevM}➔${currM})</th>
+                    <th>HĐ (${prevM}➔${currM})</th>
+                    <th>Tổng HĐ ${year}</th>
+                    <th>CP/HĐ (${year})</th>
                     <th>CPL Kế Hoạch</th>
                     <th>CPL TB ${year}</th>
                     <th>CPL (${prevM}➔${currM})</th>
@@ -1423,6 +1437,9 @@
                         <td><b style="color:#34d399;">${fmtVND(r.mc.spend)}</b></td>
                         <td><span class="badge ${dBadge}">${r.deltaSpendPct >= 0 ? '+' : ''}${r.deltaSpendPct.toFixed(1)}%</span></td>
                         <td>${r.mp.data} ➔ <b>${r.mc.data}</b></td>
+                        <td>${r.mp.hd} ➔ <b style="color:#22d3ee;">${r.mc.hd}</b></td>
+                        <td><b>${fmtNum(r.yearHD)}</b></td>
+                        <td><b>${r.yearHD > 0 ? fmtShort(r.yearSpend / r.yearHD) : '--'}</b></td>
                         <td>${planStr}</td>
                         <td style="color:${avgCplColor}; font-weight:800;">${r.avgYearCPL > 0 ? fmtShort(r.avgYearCPL) : '--'}</td>
                         <td>${r.cplPrev > 0 ? fmtShort(r.cplPrev) : '--'} ➔ <b style="color:${currCplColor};">${r.cplCurr > 0 ? fmtShort(r.cplCurr) : '--'}</b></td>
@@ -1439,6 +1456,9 @@
             const totDelta = totP > 0 ? ((totC - totP) / totP * 100) : 0;
             const totDataP = rows.reduce((s, r) => s + r.mp.data, 0);
             const totDataC = rows.reduce((s, r) => s + r.mc.data, 0);
+            const totHDP = rows.reduce((s, r) => s + r.mp.hd, 0);
+            const totHDC = rows.reduce((s, r) => s + r.mc.hd, 0);
+            const totYHD = rows.reduce((s, r) => s + r.yearHD, 0);
             const overCount = rows.filter(r => r.planCPL > 0 && (r.isOverPlanCurr || r.isOverPlanAvg)).length;
 
             tbody.innerHTML = bodyHtml + `
@@ -1450,6 +1470,9 @@
                     <td>${fmtVND(totC)}</td>
                     <td>${totDelta >= 0 ? '+' : ''}${totDelta.toFixed(1)}%</td>
                     <td>${totDataP} ➔ ${totDataC}</td>
+                    <td>${totHDP} ➔ ${totHDC}</td>
+                    <td>${fmtNum(totYHD)}</td>
+                    <td>${totYHD > 0 ? fmtShort(totY / totYHD) : '--'}</td>
                     <td>--</td>
                     <td>${totYData > 0 ? fmtShort(totYWithData / totYData) : '--'}</td>
                     <td>${totDataP > 0 ? fmtShort(totP/totDataP) : '--'} ➔ ${totDataC > 0 ? fmtShort(totC/totDataC) : '--'}</td>
@@ -1500,6 +1523,10 @@
                 "Δ% Tháng": +r.deltaSpendPct.toFixed(2),
                 [`Data ${prevM}`]: r.mp.data,
                 [`Data ${currM}`]: r.mc.data,
+                [`HĐ ${prevM}`]: r.mp.hd,
+                [`HĐ ${currM}`]: r.mc.hd,
+                "Tổng HĐ Năm": r.yearHD,
+                "CP/HĐ Năm": r.yearHD > 0 ? Math.round(r.yearSpend / r.yearHD) : 0,
                 "CPL Kế Hoạch": r.planCPL || "",
                 "CPL TB Năm": r.avgYearCPL || "",
                 [`CPL ${prevM}`]: r.cplPrev || "",
