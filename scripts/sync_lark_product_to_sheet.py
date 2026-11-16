@@ -180,23 +180,38 @@ def num_val(v):
 
 
 def clean_and_tag_records(raw_records, embedded_records):
-    print("\n[2] Làm sạch dữ liệu, đồng bộ chỉ số thiếu của Embedded từ tblTwe6eaWKQO75r & đối chiếu CPL Kế hoạch...")
+    print("\n[2] Làm sạch dữ liệu, THAY THẾ toàn bộ dữ liệu Embedded cũ bằng dữ liệu mới từ tblTwe6eaWKQO75r & đối chiếu CPL Kế hoạch...")
     pancake_fallback = load_pancake_fallback()
 
-    # Lập map dữ liệu chi tiết của sản phẩm Embedded từ bảng tblTwe6eaWKQO75r theo Mã Tháng (YYYY-MM)
-    embedded_by_month = {}
-    for er in embedded_records:
-        ef = er.get("fields") or {}
-        _, _, ym_e, _ = parse_month_str(ef.get("Tháng"))
-        if ym_e:
-            embedded_by_month[ym_e] = ef
+    # Loại bỏ toàn bộ các dòng Embedded cũ trong bảng tổng hợp (tblEr3vySvt58EkK) và thay thế bằng các bản ghi từ bảng Embedded (tblTwe6eaWKQO75r)
+    combined_records = []
+    removed_old_embedded = 0
+    for r in raw_records:
+        flds = r.get("fields") or {}
+        sp_raw = flds.get("Sản Phẩm")
+        if isinstance(sp_raw, list):
+            sp_list = [str(x).strip() for x in sp_raw if x]
+        elif isinstance(sp_raw, str) and sp_raw.strip():
+            sp_list = [sp_raw.strip()]
+        else:
+            sp_list = []
+        if len(sp_list) == 1 and sp_list[0] == "Embedded" and embedded_records:
+            removed_old_embedded += 1
+            continue
+        combined_records.append(r)
 
-    print(f"-> Đã nạp dữ liệu bổ sung cho Embedded của {len(embedded_by_month)} tháng từ bảng tblTwe6eaWKQO75r: {sorted(embedded_by_month.keys())}")
+    if embedded_records:
+        for er in embedded_records:
+            ef = dict(er.get("fields") or {})
+            if not ef.get("Sản Phẩm"):
+                ef["Sản Phẩm"] = ["Embedded"]
+            combined_records.append({"id": er.get("id"), "record_id": er.get("record_id"), "fields": ef})
+
+    print(f"-> Đã xóa {removed_old_embedded} dòng Embedded cũ và thay thế bằng {len(embedded_records)} dòng Embedded mới nhất từ Lark Base.")
 
     cleaned = []
-    seen_embedded_months = set()
 
-    for r in raw_records:
+    for r in combined_records:
         flds = dict(r.get("fields") or {})
         thang_raw = flds.get("Tháng")
         sp_raw = flds.get("Sản Phẩm")
@@ -215,16 +230,6 @@ def clean_and_tag_records(raw_records, embedded_records):
         year_num, month_num, ym_code, month_label = parse_month_str(thang_raw)
         if year_num == 0:
             continue
-
-        # Nếu là sản phẩm Embedded và có trong bảng tblTwe6eaWKQO75r -> Bổ sung các chỉ số còn thiếu (SL DATA TỔNG, SL DATA FB Mess, SL DATA FB Landing, CPL TỔNG, CPL FB Mess, CPL Landing, DATA/MESS...)
-        if prod_origin == "Embedded" and ym_code in embedded_by_month:
-            seen_embedded_months.add(ym_code)
-            ef = embedded_by_month[ym_code]
-            for k, v in ef.items():
-                cur_v = flds.get(k)
-                if cur_v is None or cur_v == 0 or cur_v == 0.0 or cur_v == "":
-                    if v is not None and v != "" and v != 0:
-                        flds[k] = v
 
         tong_cp_sau_thue = round(num_val(flds.get("TỔNG CHI PHÍ ADS SAU THUẾ")))
         cp_fb_mess = round(num_val(flds.get("CHI PHÍ Fb Mess Ads")))
@@ -341,7 +346,7 @@ def clean_and_tag_records(raw_records, embedded_records):
     with open(CLEAN_JSON_FILE, "w", encoding="utf-8") as f:
         json.dump(cleaned, f, ensure_ascii=False, indent=2)
 
-    print(f"-> Đã đồng bộ hoàn chỉnh {len(seen_embedded_months)} tháng Embedded từ tblTwe6eaWKQO75r và lưu {len(cleaned)} bản ghi tại: {CLEAN_CSV_FILE}")
+    print(f"-> Đã thay thế hoàn chỉnh {len(embedded_records)} tháng Embedded và lưu {len(cleaned)} bản ghi tại: {CLEAN_CSV_FILE}")
     return cleaned
 
 
