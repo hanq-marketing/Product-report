@@ -3,31 +3,41 @@ import json
 import os
 import sys
 
-sys.stdout.reconfigure(encoding='utf-8')
+sys.stdout.reconfigure(encoding="utf-8")
 
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-csv_path = os.path.join(base_dir, "data", "bao_cao_cac_tai_khoan_10_2026.csv")
+csv_path = os.path.join(base_dir, "data", "lark_product_cleaned.csv")
 html_path = os.path.join(base_dir, "dashboard_tru_cot_1_ngan_sach.html")
 
-print("Đọc dữ liệu từ CSV cho Dashboard Ngân Sách 2026...")
+print("Đọc dữ liệu sạch từ lark_product_cleaned.csv...")
 rows = []
+int_fields = {
+    "Năm", "Tháng Số",
+    "Tổng Chi Phí Ads (Sau Thuế)", "Chi Phí FB Mess (Sau Thuế)", "Chi Phí FB Landing (Sau Thuế)", "Chi Phí TikTok (Sau Thuế)",
+    "Chi Phí FB Mess (Trước Thuế)", "Chi Phí FB Landing (Trước Thuế)", "Chi Phí TikTok (Trước Thuế)",
+    "SL Mess", "SL Data Tổng", "SL Data FB Mess", "SL Data FB Landing", "SL Data TikTok",
+    "CPL Tổng", "CP/Mess", "HĐ Ký Trong Tháng", "Tổng HĐ", "HĐ Hết Vòng", "CP/HĐ Hết Vòng",
+    "Doanh Số Trong Tháng", "Doanh Số Tổng"
+}
+float_fields = {"CP/DS Tổng (%)"}
+
 with open(csv_path, mode="r", encoding="utf-8-sig") as f:
     reader = csv.DictReader(f)
     for r in reader:
-        row_dict = dict(r)
-        for num_field in ["Chi tiêu", "CTR (%)", "CPC", "CPM", "CPA"]:
+        d = dict(r)
+        for k in int_fields:
             try:
-                row_dict[num_field] = float(row_dict.get(num_field, 0))
+                d[k] = int(float(d.get(k, 0) or 0))
             except Exception:
-                row_dict[num_field] = 0.0
-        for int_field in ["Hiển thị", "Click link", "Tin nhắn", "Lead", "Đăng ký", "Sđt theo campain"]:
+                d[k] = 0
+        for k in float_fields:
             try:
-                row_dict[int_field] = int(float(row_dict.get(int_field, 0)))
+                d[k] = float(d.get(k, 0.0) or 0.0)
             except Exception:
-                row_dict[int_field] = 0
-        rows.append(row_dict)
+                d[k] = 0.0
+        rows.append(d)
 
-print(f"-> Đã đọc {len(rows)} dòng dữ liệu.")
+print(f"-> Đã đọc {len(rows)} bản ghi sản phẩm sạch.")
 json_data_str = json.dumps(rows, ensure_ascii=False)
 
 html_content = """<!DOCTYPE html>
@@ -35,7 +45,7 @@ html_content = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Quản Trị Chi Tiêu Quảng Cáo Năm 2026 Theo Đầu Sản Phẩm</title>
+    <title>Quản Trị Ngân Sách Sản Phẩm 2026 | Product Report</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -44,46 +54,37 @@ html_content = """<!DOCTYPE html>
     <style>
         :root {
             --bg-base: #070b14;
-            --bg-surface: rgba(15, 23, 42, 0.85);
+            --bg-surface: rgba(15, 23, 42, 0.88);
             --bg-surface-solid: #0f172a;
             --bg-card: rgba(30, 41, 59, 0.65);
             --border-color: rgba(255, 255, 255, 0.09);
-            --border-hover: rgba(99, 102, 241, 0.45);
-
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --text-muted: #64748b;
-
             --primary: #6366f1;
             --primary-light: rgba(99, 102, 241, 0.16);
             --success: #10b981;
-            --success-light: rgba(16, 185, 129, 0.16);
             --warning: #f59e0b;
-            --warning-light: rgba(245, 158, 11, 0.16);
             --danger: #ef4444;
-            --danger-light: rgba(239, 68, 68, 0.16);
             --cyan: #06b6d4;
-            --purple: #a855f7;
-
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
             --radius-full: 9999px;
-            --shadow-card: 0 8px 28px -4px rgba(0, 0, 0, 0.45);
+            --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.42);
         }
 
         [data-theme="light"] {
             --bg-base: #f1f5f9;
-            --bg-surface: rgba(255, 255, 255, 0.94);
-            --bg-surface-solid: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-surface-solid: #f8fafc;
             --bg-card: #f8fafc;
             --border-color: rgba(15, 23, 42, 0.1);
-            --border-hover: rgba(79, 70, 229, 0.45);
             --text-primary: #0f172a;
             --text-secondary: #475569;
             --text-muted: #64748b;
             --primary: #4f46e5;
-            --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+            --shadow-card: 0 4px 14px rgba(0, 0, 0, 0.06);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -92,279 +93,269 @@ html_content = """<!DOCTYPE html>
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg-base);
             background-image:
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.14) 0px, transparent 45%),
-                radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.10) 0px, transparent 45%);
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 45%),
+                radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 45%);
             color: var(--text-primary);
             min-height: 100vh;
-            line-height: 1.5;
-            padding-bottom: 3rem;
+            padding-bottom: 2.5rem;
         }
 
         .container {
-            max-width: 1600px;
+            max-width: 1580px;
             margin: 0 auto;
-            padding: 1.25rem 1.5rem;
+            padding: 1rem 1.25rem;
         }
 
-        /* ─── HEADER ─── */
-        header {
+        /* ─── COMPACT TOP BAR ─── */
+        .topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
-            padding: 1.1rem 1.4rem;
+            gap: 0.75rem;
+            padding: 0.85rem 1.15rem;
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-card);
-            margin-bottom: 1.35rem;
+            margin-bottom: 0.9rem;
         }
 
-        .brand-box {
+        .brand {
             display: flex;
             align-items: center;
-            gap: 0.95rem;
+            gap: 0.75rem;
         }
 
-        .brand-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 13px;
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
             background: linear-gradient(135deg, #6366f1 0%, #10b981 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.45rem;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+            font-size: 1.2rem;
         }
 
-        .brand-title h1 {
-            font-size: 1.25rem;
+        .brand-title {
+            font-size: 1.08rem;
             font-weight: 800;
             letter-spacing: -0.02em;
         }
 
-        .brand-title p {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-        }
-
-        .header-actions {
+        .top-controls {
             display: flex;
             align-items: center;
-            gap: 0.65rem;
+            gap: 0.5rem;
             flex-wrap: wrap;
+        }
+
+        .select-sm {
+            height: 36px;
+            padding: 0 0.65rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface-solid);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
-            padding: 0.5rem 0.95rem;
+            gap: 0.35rem;
+            height: 36px;
+            padding: 0 0.8rem;
             border-radius: var(--radius-sm);
             border: 1px solid var(--border-color);
             background: var(--bg-card);
             color: var(--text-primary);
             font-family: inherit;
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             font-weight: 700;
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.15s;
         }
 
-        .btn:hover {
-            border-color: var(--primary);
-            transform: translateY(-1px);
-        }
+        .btn:hover { border-color: var(--primary); }
+        .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
 
-        .btn-primary {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
-        }
-
-        /* ─── SECTION BLOCK ─── */
-        .section-block {
+        /* ─── PRODUCT PILLS BAR ─── */
+        .pills-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            padding: 0.65rem 1rem;
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 1.35rem 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow-card);
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 1rem;
-            padding-bottom: 1rem;
-            margin-bottom: 1.15rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .section-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.2rem 0.65rem;
-            border-radius: var(--radius-full);
-            font-size: 0.72rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            background: var(--primary-light);
-            color: #818cf8;
-            border: 1px solid rgba(99, 102, 241, 0.35);
-            margin-bottom: 0.35rem;
-        }
-
-        .section-title {
-            font-size: 1.18rem;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-
-        .section-desc {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            margin-top: 0.15rem;
-        }
-
-        /* ─── FILTER ROW IN SECTION 1 ─── */
-        .filter-panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
-            padding: 1rem 1.15rem;
-            margin-bottom: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.9rem;
-        }
-
-        .filter-controls-grid {
-            display: flex;
-            align-items: flex-end;
-            gap: 0.9rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-            flex: 1;
-            min-width: 190px;
-        }
-
-        .filter-label {
-            font-size: 0.74rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: var(--text-secondary);
-        }
-
-        .select-input {
-            width: 100%;
-            height: 40px;
-            padding: 0 0.75rem;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border-color);
-            background: var(--bg-surface-solid);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.84rem;
-            font-weight: 600;
-        }
-
-        /* Product Quick Pills */
-        .product-pills-wrap {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-            flex-wrap: wrap;
-            padding-top: 0.65rem;
-            border-top: 1px solid var(--border-color);
+            margin-bottom: 1rem;
         }
 
         .prod-pill {
-            padding: 0.34rem 0.78rem;
+            padding: 0.28rem 0.7rem;
             border-radius: var(--radius-full);
             border: 1px solid var(--border-color);
             background: var(--bg-surface-solid);
             color: var(--text-secondary);
-            font-size: 0.76rem;
+            font-size: 0.75rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.18s;
+            transition: all 0.15s;
         }
 
-        .prod-pill:hover {
-            border-color: var(--primary);
-            color: var(--text-primary);
-        }
-
+        .prod-pill:hover { border-color: var(--primary); color: var(--text-primary); }
         .prod-pill.active {
             background: var(--primary);
             border-color: var(--primary);
             color: #fff;
-            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
         }
 
-        /* ─── KPI CARDS (SECTION 1) ─── */
-        .kpi-grid-4 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.35rem;
-        }
-
-        .kpi-card {
-            background: var(--bg-card);
+        /* ─── SECTION CONTAINER ─── */
+        .section-box {
+            background: var(--bg-surface);
             border: 1px solid var(--border-color);
-            border-top: 4px solid var(--accent, var(--primary));
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-lg);
             padding: 1.1rem 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
+            margin-bottom: 1.15rem;
+            box-shadow: var(--shadow-card);
         }
 
-        .kpi-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.76rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-        }
-
-        .kpi-main-val {
-            font-size: 1.6rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            color: var(--text-primary);
-        }
-
-        .kpi-meta {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
+        .section-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 0.35rem;
-            padding-top: 0.35rem;
-            border-top: 1px solid var(--border-color);
+            gap: 0.5rem;
+            margin-bottom: 0.9rem;
         }
 
-        /* ─── TABLE STYLING ─── */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.96rem;
+            font-weight: 800;
+        }
+
+        .tag-sec {
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+            background: var(--primary-light);
+            color: #818cf8;
+            font-size: 0.7rem;
+            font-weight: 800;
+        }
+
+        /* ─── SECTION 1: 4 COMPACT KPI CARDS ─── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.85rem;
+        }
+
+        @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+        .kpi-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-top: 3px solid var(--accent, var(--primary));
+            border-radius: var(--radius-md);
+            padding: 0.9rem 1.05rem;
+        }
+
+        .kpi-name {
+            font-size: 0.73rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .kpi-num {
+            font-size: 1.48rem;
+            font-weight: 800;
+            margin: 0.25rem 0;
+            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .kpi-foot {
+            font-size: 0.74rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            padding-top: 0.3rem;
+            border-top: 1px solid var(--border-color);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ─── SECTION 2: CHARTS ─── */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1.65fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 1024px) { .charts-row { grid-template-columns: 1fr; } }
+
+        .chart-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.95rem 1.05rem;
+        }
+
+        .chart-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.65rem;
+            font-size: 0.86rem;
+            font-weight: 800;
+        }
+
+        .canvas-wrap {
+            position: relative;
+            height: 310px;
+            width: 100%;
+        }
+
+        .switch-group {
+            display: inline-flex;
+            background: var(--bg-surface-solid);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .switch-btn {
+            padding: 0.22rem 0.6rem;
+            border-radius: 5px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .switch-btn.active { background: var(--primary); color: #fff; }
+
+        /* ─── COMPACT TABLES ─── */
         .table-wrap {
             overflow-x: auto;
             border: 1px solid var(--border-color);
@@ -374,37 +365,30 @@ html_content = """<!DOCTYPE html>
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.83rem;
+            font-size: 0.8rem;
             text-align: left;
             white-space: nowrap;
+            font-variant-numeric: tabular-nums;
         }
 
         th {
             background: var(--bg-surface-solid);
-            padding: 0.82rem 0.95rem;
+            padding: 0.68rem 0.85rem;
             font-weight: 700;
             color: var(--text-secondary);
             border-bottom: 2px solid var(--border-color);
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
         }
 
         td {
-            padding: 0.78rem 0.95rem;
+            padding: 0.62rem 0.85rem;
             border-bottom: 1px solid var(--border-color);
             color: var(--text-primary);
-            vertical-align: middle;
         }
 
-        tr:hover td {
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        tr.selected-row td {
-            background: rgba(99, 102, 241, 0.14);
-        }
-
+        tr:hover td { background: rgba(99, 102, 241, 0.05); }
+        tr.active-row td { background: rgba(99, 102, 241, 0.14); }
         tr.total-row td {
             background: rgba(99, 102, 241, 0.12);
             font-weight: 800;
@@ -414,395 +398,230 @@ html_content = """<!DOCTYPE html>
         .badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.25rem;
-            padding: 0.2rem 0.58rem;
+            padding: 0.15rem 0.5rem;
             border-radius: var(--radius-full);
-            font-size: 0.73rem;
+            font-size: 0.71rem;
             font-weight: 800;
         }
 
-        .badge-up { background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
-        .badge-down { background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
-        .badge-warn { background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
-        .badge-info { background: rgba(6, 182, 212, 0.16); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.35); }
-        .badge-neutral { background: rgba(148, 163, 184, 0.14); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.28); }
+        .b-up { background: rgba(16, 185, 129, 0.16); color: #34d399; }
+        .b-down { background: rgba(239, 68, 68, 0.16); color: #f87171; }
+        .b-warn { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
+        .b-info { background: rgba(6, 182, 212, 0.16); color: #22d3ee; }
+        .b-muted { background: rgba(148, 163, 184, 0.14); color: #94a3b8; }
 
-        .bar-mini {
-            width: 60px;
-            height: 6px;
+        .mini-bar {
+            width: 48px;
+            height: 5px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 99px;
             overflow: hidden;
             display: inline-block;
             vertical-align: middle;
-            margin-right: 6px;
+            margin-right: 5px;
         }
 
-        .bar-mini-fill {
-            height: 100%;
-            border-radius: 99px;
-        }
-
-        /* ─── SECTION 2: CHARTS LAYOUT ─── */
-        .charts-main-grid {
-            display: grid;
-            grid-template-columns: 1.55fr 1fr;
-            gap: 1.25rem;
-            margin-bottom: 1.25rem;
-        }
-
-        @media (max-width: 1024px) {
-            .charts-main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .chart-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1.15rem 1.25rem;
-        }
-
-        .chart-card-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            margin-bottom: 0.9rem;
-        }
-
-        .chart-card-title {
-            font-size: 0.98rem;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-
-        .chart-card-sub {
-            font-size: 0.76rem;
-            color: var(--text-secondary);
-            margin-top: 0.15rem;
-        }
-
-        .chart-canvas-box {
-            position: relative;
-            height: 350px;
-            width: 100%;
-        }
-
-        .mode-switch-group {
-            display: inline-flex;
-            background: var(--bg-surface-solid);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            padding: 3px;
-            gap: 3px;
-        }
-
-        .mode-switch-btn {
-            padding: 0.3rem 0.7rem;
-            border-radius: 6px;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            font-family: inherit;
-            font-size: 0.75rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .mode-switch-btn.active {
-            background: var(--primary);
-            color: #fff;
-        }
+        .mini-bar-fill { height: 100%; border-radius: 99px; background: #6366f1; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- ─── HEADER ─── -->
-        <header>
-            <div class="brand-box">
-                <div class="brand-icon">📊</div>
-                <div class="brand-title">
-                    <h1>DASHBOARD QUẢN TRỊ CHI TIÊU QUẢNG CÁO NĂM 2026 THEO ĐẦU SẢN PHẨM</h1>
-                    <p>Thống kê tổng chi tiêu năm 2026 theo đầu sản phẩm, chu kỳ theo tháng & đối sánh biến thiên Tháng trước vs. Tháng hiện tại</p>
+        <!-- ─── TOP BAR ─── -->
+        <div class="topbar">
+            <div class="brand">
+                <div class="brand-logo">📊</div>
+                <div>
+                    <div class="brand-title">QUẢN TRỊ NGÂN SÁCH SẢN PHẨM QUẢNG CÁO</div>
+                    <div style="font-size:0.73rem; color:var(--text-secondary);" id="syncStatusText">🟢 Nguồn: Lark Base (tblEr3vySvt58EkK) ➔ Google Sheet</div>
                 </div>
             </div>
-            <div class="header-actions">
-                <span id="syncBadge" class="badge badge-up">🟢 Dữ liệu Năm 2026</span>
-                <button class="btn btn-primary" onclick="syncGoogleSheet()">🔄 Đồng bộ Google Sheet</button>
-                <a class="btn" href="https://hanq-marketing.github.io/daily-report/" target="_blank">📊 Mở Báo Cáo Tổng Quan (Daily Report)</a>
-                <button class="btn" onclick="toggleTheme()">🌓 Giao diện</button>
+
+            <div class="top-controls">
+                <select id="yearSelect" class="select-sm" onchange="onYearChange()">
+                    <option value="2026" selected>📅 Năm 2026</option>
+                    <option value="2025">📅 Năm 2025</option>
+                </select>
+                <select id="productSelect" class="select-sm" onchange="onProductDropdownChange()">
+                    <option value="ALL">📦 Tất cả sản phẩm</option>
+                </select>
+                <select id="prevMonthSelect" class="select-sm" onchange="renderAll()"></select>
+                <span style="font-weight:800; color:var(--primary);">➔</span>
+                <select id="currMonthSelect" class="select-sm" onchange="renderAll()"></select>
+
+                <button class="btn btn-primary" onclick="fetchFromGoogleSheet()">🔄 Làm mới Sheet</button>
+                <a class="btn" href="https://docs.google.com/spreadsheets/d/1V9z5T7BQABDSvsytY0P1kKV5b4lMfpzcFZWghJwUitw/edit" target="_blank">📗 Google Sheet</a>
+                <button class="btn" onclick="toggleTheme()">🌓</button>
             </div>
-        </header>
+        </div>
+
+        <!-- ─── QUICK PRODUCT PILLS ─── -->
+        <div class="pills-bar" id="productPills"></div>
 
         <!-- ═══════════════════════════════════════════════════════════════════════════
-             SECTION 1: TỔNG CHI TIÊU TRONG NĂM 2026 LỌC THEO ĐẦU SẢN PHẨM, CHU KỲ THEO THÁNG
-                        SO SÁNH THÁNG TRƯỚC VÀ THÁNG HIỆN TẠI
+             SECTION 1: TỔNG CHI TIÊU NĂM 2026 & SO SÁNH THÁNG TRƯỚC VS. THÁNG HIỆN TẠI
              ═══════════════════════════════════════════════════════════════════════════ -->
-        <section class="section-block" id="section1">
-            <div class="section-header">
-                <div>
-                    <span class="section-tag">📌 SECTION 1</span>
-                    <div class="section-title">Tổng Chi Tiêu Trong Năm 2026 Theo Đầu Sản Phẩm & So Sánh Tháng Trước vs. Tháng Hiện Tại</div>
-                    <div class="section-desc">Lọc chi tiết theo từng đầu sản phẩm, chu kỳ theo tháng trong năm 2026 và đo lường tốc độ biến thiên ngân sách giữa Tháng trước và Tháng hiện tại</div>
+        <div class="section-box">
+            <div class="section-bar">
+                <div class="section-label">
+                    <span class="tag-sec">SECTION 1</span>
+                    <span id="sec1Title">Tổng Chi Tiêu Năm 2026 & So Sánh Tháng Trước vs. Tháng Hiện Tại</span>
                 </div>
-                <div>
-                    <button class="btn" onclick="exportSection1CSV()">📥 Xuất CSV Section 1</button>
+                <div class="switch-group">
+                    <button class="switch-btn active" id="btnTaxAfter" onclick="setTaxMode('after')">Sau thuế (Tổng CP)</button>
+                    <button class="switch-btn" id="btnTaxBefore" onclick="setTaxMode('before')">Trước thuế</button>
                 </div>
             </div>
 
-            <!-- Bộ lọc Section 1 -->
-            <div class="filter-panel">
-                <div class="filter-controls-grid">
-                    <!-- Lọc Đầu Sản Phẩm -->
-                    <div class="filter-item" style="flex: 1.4;">
-                        <label class="filter-label">📦 Lọc Theo Đầu Sản Phẩm</label>
-                        <select id="productSelect" class="select-input" onchange="onProductSelectChange()">
-                            <option value="ALL">👉 Tất cả đầu sản phẩm (Toàn hệ thống 2026)</option>
-                        </select>
-                    </div>
+            <div class="kpi-grid" id="sec1KpiGrid"></div>
+        </div>
 
-                    <!-- Chế độ nhóm Đầu Sản Phẩm -->
-                    <div class="filter-item" style="flex: 1.1;">
-                        <label class="filter-label">🗂️ Cách Phân Nhóm Sản Phẩm</label>
-                        <select id="groupBySelect" class="select-input" onchange="initProductOptions(); renderDashboard();">
-                            <option value="product" selected>Theo Đầu Sản Phẩm (Data Analyst, Embedded, AI Engineer...)</option>
-                            <option value="account">Theo Tài Khoản Ads (RA10 - DABK, Ra1 - EMBEDDED...)</option>
-                        </select>
-                    </div>
+        <!-- ═══════════════════════════════════════════════════════════════════════════
+             SECTION 2: BIỂU ĐỒ CHI TIÊU CÁC SẢN PHẨM QUA CÁC THÁNG
+             ═══════════════════════════════════════════════════════════════════════════ -->
+        <div class="section-box">
+            <div class="section-bar">
+                <div class="section-label">
+                    <span class="tag-sec">SECTION 2</span>
+                    <span>Biểu Đồ Chi Tiêu Các Sản Phẩm Qua Các Tháng</span>
+                </div>
+                <div class="switch-group">
+                    <button class="switch-btn active" id="btnChartSpend" onclick="setChartMetric('spend')">💰 Chi Tiêu</button>
+                    <button class="switch-btn" id="btnChartData" onclick="setChartMetric('data')">📱 Chi Tiêu + Data</button>
+                    <button class="switch-btn" id="btnChartHD" onclick="setChartMetric('hd')">📝 Chi Tiêu + HĐ</button>
+                </div>
+            </div>
 
-                    <!-- Năm -->
-                    <div class="filter-item" style="flex: 0.7; min-width: 130px;">
-                        <label class="filter-label">📅 Năm Quản Trị</label>
-                        <select id="yearSelect" class="select-input" onchange="initMonthSelectors(); renderDashboard();">
-                            <option value="2026" selected>Năm 2026</option>
-                        </select>
+            <!-- Hàng 1: So sánh Tháng trước vs Tháng hiện tại + Tỷ trọng năm -->
+            <div class="charts-row">
+                <div class="chart-panel">
+                    <div class="chart-head">
+                        <span id="compareChartTitle">1. So Sánh Chi Tiêu Sản Phẩm: Tháng Trước vs. Tháng Hiện Tại</span>
+                        <span style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">Bấm vào cột để lọc SP</span>
                     </div>
-
-                    <!-- Tháng Trước -->
-                    <div class="filter-item" style="flex: 1;">
-                        <label class="filter-label">⏪ Chu Kỳ: Tháng Trước</label>
-                        <select id="prevMonthSelect" class="select-input" onchange="renderDashboard()"></select>
-                    </div>
-
-                    <!-- Tháng Hiện Tại -->
-                    <div class="filter-item" style="flex: 1;">
-                        <label class="filter-label">⏩ Chu Kỳ: Tháng Hiện Tại</label>
-                        <select id="currMonthSelect" class="select-input" onchange="renderDashboard()"></select>
-                    </div>
-
-                    <!-- Hình thức chạy -->
-                    <div class="filter-item" style="flex: 0.9; min-width: 155px;">
-                        <label class="filter-label">🎯 Hình Thức Chạy</label>
-                        <select id="formatSelect" class="select-input" onchange="renderDashboard()">
-                            <option value="ALL">Tất cả hình thức</option>
-                            <option value="Mess">💬 Mess</option>
-                            <option value="CĐ">🎯 Chuyển đổi (CĐ)</option>
-                            <option value="Phễu Học Thử">🎪 Phễu Học Thử</option>
-                            <option value="Branding">📢 Branding</option>
-                        </select>
+                    <div class="canvas-wrap">
+                        <canvas id="chartMonthCompare"></canvas>
                     </div>
                 </div>
 
-                <!-- Thanh bấm chọn nhanh Đầu Sản Phẩm -->
-                <div class="product-pills-wrap" id="productPillsBar"></div>
+                <div class="chart-panel">
+                    <div class="chart-head">
+                        <span id="shareChartTitle">2. Tỷ Trọng Ngân Sách Năm 2026 Theo Sản Phẩm</span>
+                    </div>
+                    <div class="canvas-wrap">
+                        <canvas id="chartYearShare"></canvas>
+                    </div>
+                </div>
             </div>
 
-            <!-- 4 Thẻ KPI Tổng Chi Tiêu 2026 & So Sánh Tháng Trước vs Tháng Hiện Tại -->
-            <div class="kpi-grid-4" id="section1KpiGrid"></div>
+            <!-- Hàng 2: Xu hướng chi tiêu qua các tháng trong năm -->
+            <div class="chart-panel" style="margin-bottom: 1rem;">
+                <div class="chart-head">
+                    <span id="trendChartTitle">3. Xu Hướng Chi Tiêu Qua Các Tháng Trong Năm (T01 ➔ T11)</span>
+                    <div class="switch-group">
+                        <button class="switch-btn active" id="btnStackProd" onclick="setTrendMode('product')">Theo Sản Phẩm</button>
+                        <button class="switch-btn" id="btnStackChannel" onclick="setTrendMode('channel')">Theo Kênh (FB Mess / LDP / TikTok)</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap" style="height: 290px;">
+                    <canvas id="chartMonthlyTrend"></canvas>
+                </div>
+            </div>
 
-            <!-- Bảng Tổng Chi Tiêu Năm 2026 & So Sánh Tháng Trước vs. Tháng Hiện Tại Theo Đầu Sản Phẩm -->
+            <!-- Bảng đối chiếu gọn & Ma trận các tháng -->
+            <div class="chart-head" style="margin-top:0.25rem;">
+                <span id="tableModeTitle">4. Bảng Số Liệu Ngân Sách Sản Phẩm</span>
+                <div style="display:flex; gap:0.4rem;">
+                    <div class="switch-group">
+                        <button class="switch-btn active" id="btnTblCompare" onclick="setTableMode('compare')">So Sánh 2 Tháng</button>
+                        <button class="switch-btn" id="btnTblMatrix" onclick="setTableMode('matrix')">Ma Trận Toàn Bộ Các Tháng</button>
+                    </div>
+                    <button class="btn" style="height:28px; padding:0 0.6rem; font-size:0.72rem;" onclick="exportCSV()">📥 Xuất CSV</button>
+                </div>
+            </div>
+
             <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Đầu Sản Phẩm</th>
-                            <th>Tổng Chi Tiêu Năm 2026</th>
-                            <th>Tỷ Trọng Năm 2026</th>
-                            <th id="thPrevMonth">Tháng Trước (T10/2026)</th>
-                            <th id="thCurrMonth">Tháng Hiện Tại (T11/2026)</th>
-                            <th>Chênh Lệch (Tháng Này - Trước)</th>
-                            <th>Δ% Biến Thiên Tháng</th>
-                            <th>Chi Tiêu TB/Ngày (Trước ➔ Này)</th>
-                            <th>Δ% Tốc Độ Chi/Ngày</th>
-                            <th>SĐT Pancake (Trước ➔ Này)</th>
-                            <th>CPL Giá/SĐT (Trước ➔ Này)</th>
-                            <th>Đánh Giá Biến Thiên</th>
-                        </tr>
-                    </thead>
-                    <tbody id="section1TableBody"></tbody>
+                <table id="mainTable">
+                    <thead id="mainTableHead"></thead>
+                    <tbody id="mainTableBody"></tbody>
                 </table>
             </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════════════════════════════════════════
-             SECTION 2: BIỂU ĐỒ CHI TIÊU CÁC SẢN PHẨM
-             ═══════════════════════════════════════════════════════════════════════════ -->
-        <section class="section-block" id="section2">
-            <div class="section-header">
-                <div>
-                    <span class="section-tag">📈 SECTION 2</span>
-                    <div class="section-title">Biểu Đồ Chi Tiêu Các Sản Phẩm (Năm 2026 & So Sánh Giữa Các Tháng)</div>
-                    <div class="section-desc">Trực quan hóa quy mô ngân sách, đối sánh trực diện Chi tiêu Tháng trước vs. Tháng hiện tại và cơ cấu tỷ trọng ngân sách của từng đầu sản phẩm</div>
-                </div>
-                <div class="mode-switch-group">
-                    <button class="mode-switch-btn active" id="btnMetricSpend" onclick="setSection2Metric('spend')">💰 Xem Chi Tiêu (VNĐ)</button>
-                    <button class="mode-switch-btn" id="btnMetricDaily" onclick="setSection2Metric('daily')">⚡ Xem Chi Tiêu TB/Ngày</button>
-                    <button class="mode-switch-btn" id="btnMetricPhones" onclick="setSection2Metric('phones')">📱 Xem Chi Tiêu kèm SĐT</button>
-                </div>
-            </div>
-
-            <!-- Hàng 1 của Section 2: Biểu đồ Cột So sánh Tháng trước vs Tháng hiện tại + Biểu đồ Tỷ trọng Năm 2026 -->
-            <div class="charts-main-grid">
-                <div class="chart-card">
-                    <div class="chart-card-head">
-                        <div>
-                            <div class="chart-card-title" id="chartCompareTitle">1️⃣ Biểu Đồ So Sánh Chi Tiêu Các Sản Phẩm: Tháng Trước vs. Tháng Hiện Tại</div>
-                            <div class="chart-card-sub">Bấm vào bất kỳ cột sản phẩm nào trên biểu đồ để lọc riêng sản phẩm đó</div>
-                        </div>
-                    </div>
-                    <div class="chart-canvas-box">
-                        <canvas id="chartProductMonthCompare"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-card">
-                    <div class="chart-card-head">
-                        <div>
-                            <div class="chart-card-title">2️⃣ Cơ Cấu Tỷ Trọng Chi Tiêu Năm 2026 Theo Đầu Sản Phẩm (% Share)</div>
-                            <div class="chart-card-sub">Phân bổ tổng ngân sách lũy kế năm 2026 giữa các đầu sản phẩm</div>
-                        </div>
-                    </div>
-                    <div class="chart-canvas-box">
-                        <canvas id="chartProductShare2026"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Hàng 2 của Section 2: Biểu đồ Xu hướng Chi tiêu các sản phẩm theo Chu kỳ (Tháng / Tuần / Ngày) -->
-            <div class="chart-card">
-                <div class="chart-card-head">
-                    <div>
-                        <div class="chart-card-title" id="chartTimelineTitle">3️⃣ Biểu Đồ Diễn Biến Chi Tiêu Các Đầu Sản Phẩm Theo Thời Gian Trong Năm 2026</div>
-                        <div class="chart-card-sub">Theo dõi sự tăng/giảm ngân sách của từng đầu sản phẩm qua các Tháng hoặc các Tuần trong năm 2026</div>
-                    </div>
-                    <div class="mode-switch-group">
-                        <button class="mode-switch-btn active" id="btnTimeMonth" onclick="setTimelineGranularity('month')">🗓️ Theo Tháng</button>
-                        <button class="mode-switch-btn" id="btnTimeWeek" onclick="setTimelineGranularity('week')">📅 Theo Tuần (W40➔W47)</button>
-                        <button class="mode-switch-btn" id="btnTimeDay" onclick="setTimelineGranularity('day')">📆 Theo Ngày</button>
-                    </div>
-                </div>
-                <div class="chart-canvas-box" style="height: 340px;">
-                    <canvas id="chartProductTimeline"></canvas>
-                </div>
-            </div>
-        </section>
+        </div>
     </div>
 
     <script>
-        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1PD3zhqZ2rTZlMi7X3lsCh6fkvNcR-B2kGv0m9L0Fl_4/gviz/tq?tqx=out:csv&sheet=Master%20Data";
+        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1V9z5T7BQABDSvsytY0P1kKV5b4lMfpzcFZWghJwUitw/gviz/tq?tqx=out:csv&sheet=Data_San_Pham_Cleaned";
         let RAW_DATA = """ + json_data_str + """;
 
-        let chartCompareInstance = null;
-        let chartShareInstance = null;
-        let chartTimelineInstance = null;
+        let taxMode = "after";       // 'after' | 'before'
+        let chartMetric = "spend";   // 'spend' | 'data' | 'hd'
+        let trendMode = "product";   // 'product' | 'channel'
+        let tableMode = "compare";   // 'compare' | 'matrix'
 
-        let currentSec2Metric = "spend"; // 'spend' | 'daily' | 'phones'
-        let currentTimelineGranularity = "month"; // 'month' | 'week' | 'day'
-        let lastSection1Rows = [];
+        let chartCompareInst = null;
+        let chartShareInst = null;
+        let chartTrendInst = null;
+        let currentSummaryRows = [];
 
-        const formatMoney = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.round(v || 0));
-        const formatShortMoney = (v) => {
-            if (!v || v === 0) return '0 ₫';
-            if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(2) + ' tr';
-            if (Math.abs(v) >= 1e3) return Math.round(v / 1e3) + 'k';
-            return String(Math.round(v)) + ' ₫';
-        };
-        const formatNum = (v) => new Intl.NumberFormat('vi-VN').format(v || 0);
-
-        const PRODUCT_PALETTE = [
+        const PALETTE = [
             '#6366f1', '#10b981', '#06b6d4', '#f59e0b', '#ec4899',
-            '#a855f7', '#3b82f6', '#84cc16', '#f43f5e', '#14b8a6'
+            '#a855f7', '#3b82f6', '#84cc16', '#f43f5e', '#14b8a6',
+            '#eab308', '#8b5cf6', '#0ea5e9', '#fb923c'
         ];
 
-        function normalizeProductName(row) {
-            let p = String(row["Sản phẩm"] || "").trim();
-            if (["BrSE", "Tsu", "Tsubasa"].includes(p)) return "BrSE";
-            if (["Embeded", "Nhúng"].includes(p)) return "Embedded";
-            if (["AI engineer", "AI Enginner", "AI"].includes(p)) return "AI Engineer";
-            if (["Data Analyst", "DA"].includes(p)) return "Data Analyst";
-            if (["Data Engineer", "DE"].includes(p)) return "Data Engineer";
-            if (["Network Security", "Cyber"].includes(p)) return "Network Security";
-            if (!p) {
-                const acc = String(row["Tài khoản"] || "");
-                if (acc.includes("DABK")) return "Data Analyst";
-                if (acc.includes("EMBEDDED")) return "Embedded";
-                if (acc.includes("AI")) return "AI Engineer";
-                if (acc.includes("BA")) return "BA";
-                if (acc.includes("DE")) return "Data Engineer";
-                if (acc.includes("PTIT")) return "PTIT";
-                if (acc.includes("NHẬT")) return "BrSE";
-                return acc || "Khác";
+        const fmtVND = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.round(v || 0));
+        const fmtShort = (v) => {
+            if (!v || v === 0) return '0';
+            if (Math.abs(v) >= 1e9) return (v / 1e9).toFixed(2) + ' tỷ';
+            if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + ' tr';
+            if (Math.abs(v) >= 1e3) return Math.round(v / 1e3) + 'k';
+            return String(Math.round(v));
+        };
+        const fmtNum = (v) => new Intl.NumberFormat('vi-VN').format(Math.round(v || 0));
+
+        function getSpend(r) {
+            if (taxMode === 'before') {
+                return (Number(r["Chi Phí FB Mess (Trước Thuế)"]) || 0)
+                     + (Number(r["Chi Phí FB Landing (Trước Thuế)"]) || 0)
+                     + (Number(r["Chi Phí TikTok (Trước Thuế)"]) || 0);
             }
-            return p;
+            return Number(r["Tổng Chi Phí Ads (Sau Thuế)"]) || 0;
         }
 
-        function getEntityName(row) {
-            const groupBy = document.getElementById('groupBySelect')?.value || 'product';
-            if (groupBy === 'account') {
-                return String(row["Tài khoản"] || "Khác").trim();
+        function getChannelSpend(r) {
+            if (taxMode === 'before') {
+                return {
+                    fbMess: Number(r["Chi Phí FB Mess (Trước Thuế)"]) || 0,
+                    fbLdp: Number(r["Chi Phí FB Landing (Trước Thuế)"]) || 0,
+                    tiktok: Number(r["Chi Phí TikTok (Trước Thuế)"]) || 0
+                };
             }
-            return normalizeProductName(row);
+            return {
+                fbMess: Number(r["Chi Phí FB Mess (Sau Thuế)"]) || 0,
+                fbLdp: Number(r["Chi Phí FB Landing (Sau Thuế)"]) || 0,
+                tiktok: Number(r["Chi Phí TikTok (Sau Thuế)"]) || 0
+            };
         }
 
-        function getIsoWeekKey(dateStr) {
-            if (!dateStr) return "Unknown";
-            const parts = String(dateStr).trim().split('-');
-            if (parts.length < 3) return dateStr.slice(0, 7);
-            const d = new Date(Date.UTC(+parts[0], +parts[1] - 1, +parts[2]));
-            const dayNum = d.getUTCDay() || 7;
-            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return `W${String(weekNo).padStart(2, '0')}`;
-        }
+        function initSelectors() {
+            const year = document.getElementById('yearSelect').value;
+            const yearRows = RAW_DATA.filter(r => String(r["Năm"]) === String(year));
 
-        function formatMonthLabel(ym) {
-            if (!ym || !ym.includes('-')) return ym;
-            const [y, m] = ym.split('-');
-            return `Tháng ${m}/${y}`;
-        }
-
-        function initMonthSelectors() {
-            const year = document.getElementById('yearSelect')?.value || '2026';
+            // Months
+            const months = Array.from(new Set(yearRows.map(r => r["Mã Tháng"]).filter(Boolean))).sort();
             const prevSel = document.getElementById('prevMonthSelect');
             const currSel = document.getElementById('currMonthSelect');
-
-            const monthMap = {};
-            RAW_DATA.forEach(r => {
-                const d = String(r["Ngày"] || "").trim();
-                if (!d.startsWith(year)) return;
-                const ym = d.slice(0, 7);
-                if (!monthMap[ym]) monthMap[ym] = new Set();
-                monthMap[ym].add(d);
-            });
-
-            const months = Object.keys(monthMap).sort();
             prevSel.innerHTML = '';
             currSel.innerHTML = '';
 
             months.forEach(ym => {
-                const daysCount = monthMap[ym].size;
-                const text = `${formatMonthLabel(ym)} (${daysCount} ngày có dữ liệu)`;
+                const [y, m] = ym.split('-');
+                const lbl = `Tháng ${m}/${y}`;
                 const o1 = document.createElement('option');
-                o1.value = ym; o1.textContent = text;
+                o1.value = ym; o1.textContent = `⏪ ${lbl}`;
                 prevSel.appendChild(o1);
 
                 const o2 = document.createElement('option');
-                o2.value = ym; o2.textContent = text;
+                o2.value = ym; o2.textContent = `⏩ ${lbl}`;
                 currSel.appendChild(o2);
             });
 
@@ -813,476 +632,326 @@ html_content = """<!DOCTYPE html>
                 prevSel.value = months[0];
                 currSel.value = months[0];
             }
-        }
 
-        function initProductOptions() {
-            const sel = document.getElementById('productSelect');
-            const pillsBar = document.getElementById('productPillsBar');
-            const year = document.getElementById('yearSelect')?.value || '2026';
-
-            const spendByEntity = {};
-            RAW_DATA.forEach(r => {
-                const d = String(r["Ngày"] || "").trim();
-                if (!d.startsWith(year)) return;
-                const ent = getEntityName(r);
-                spendByEntity[ent] = (spendByEntity[ent] || 0) + (r["Chi tiêu"] || 0);
+            // Products
+            const prodSpend = {};
+            yearRows.forEach(r => {
+                const p = r["Tag Sản Phẩm"] || r["Sản Phẩm Gốc"] || "Khác";
+                prodSpend[p] = (prodSpend[p] || 0) + getSpend(r);
             });
+            const sortedProds = Object.keys(prodSpend).sort((a, b) => prodSpend[b] - prodSpend[a]);
 
-            const sortedEntities = Object.keys(spendByEntity).sort((a, b) => spendByEntity[b] - spendByEntity[a]);
-
-            sel.innerHTML = '<option value="ALL">👉 Tất cả đầu sản phẩm (Toàn hệ thống 2026)</option>';
-            sortedEntities.forEach(ent => {
+            const prodSel = document.getElementById('productSelect');
+            const curProd = prodSel.value;
+            prodSel.innerHTML = `<option value="ALL">📦 Tất cả (${sortedProds.length} sản phẩm)</option>`;
+            sortedProds.forEach(p => {
                 const o = document.createElement('option');
-                o.value = ent;
-                o.textContent = `📦 ${ent} (${formatShortMoney(spendByEntity[ent])})`;
-                sel.appendChild(o);
+                o.value = p;
+                o.textContent = `📦 ${p} (${fmtShort(prodSpend[p])})`;
+                prodSel.appendChild(o);
             });
+            if (sortedProds.includes(curProd)) prodSel.value = curProd;
 
-            pillsBar.innerHTML = `<span style="font-size:0.76rem; font-weight:700; color:var(--text-muted); margin-right:0.2rem;">Chọn nhanh SP:</span>`;
+            // Pills
+            const pillsEl = document.getElementById('productPills');
+            pillsEl.innerHTML = '';
             const allBtn = document.createElement('button');
-            allBtn.className = 'prod-pill active';
+            allBtn.className = `prod-pill ${prodSel.value === 'ALL' ? 'active' : ''}`;
             allBtn.setAttribute('data-prod', 'ALL');
-            allBtn.textContent = 'Tất cả SP';
-            allBtn.onclick = () => selectProductPill('ALL');
-            pillsBar.appendChild(allBtn);
+            allBtn.textContent = 'Tất cả';
+            allBtn.onclick = () => selectProduct('ALL');
+            pillsEl.appendChild(allBtn);
 
-            sortedEntities.forEach(ent => {
-                const btn = document.createElement('button');
-                btn.className = 'prod-pill';
-                btn.setAttribute('data-prod', ent);
-                btn.textContent = ent;
-                btn.onclick = () => selectProductPill(ent);
-                pillsBar.appendChild(btn);
+            sortedProds.forEach(p => {
+                const b = document.createElement('button');
+                b.className = `prod-pill ${prodSel.value === p ? 'active' : ''}`;
+                b.setAttribute('data-prod', p);
+                b.textContent = p;
+                b.onclick = () => selectProduct(p);
+                pillsEl.appendChild(b);
             });
         }
 
-        function selectProductPill(prodVal) {
+        function onYearChange() {
+            initSelectors();
+            renderAll();
+        }
+
+        function onProductDropdownChange() {
+            const val = document.getElementById('productSelect').value;
+            document.querySelectorAll('.prod-pill').forEach(b => {
+                b.classList.toggle('active', b.getAttribute('data-prod') === val);
+            });
+            renderAll();
+        }
+
+        function selectProduct(prod) {
             const sel = document.getElementById('productSelect');
-            sel.value = prodVal;
-            syncProductPillsUI();
-            renderDashboard();
+            sel.value = (sel.value === prod && prod !== 'ALL') ? 'ALL' : prod;
+            onProductDropdownChange();
         }
 
-        function onProductSelectChange() {
-            syncProductPillsUI();
-            renderDashboard();
+        function setTaxMode(m) {
+            taxMode = m;
+            document.getElementById('btnTaxAfter').classList.toggle('active', m === 'after');
+            document.getElementById('btnTaxBefore').classList.toggle('active', m === 'before');
+            initSelectors();
+            renderAll();
         }
 
-        function syncProductPillsUI() {
-            const cur = document.getElementById('productSelect').value;
-            document.querySelectorAll('.prod-pill').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-prod') === cur);
-            });
+        function setChartMetric(m) {
+            chartMetric = m;
+            document.getElementById('btnChartSpend').classList.toggle('active', m === 'spend');
+            document.getElementById('btnChartData').classList.toggle('active', m === 'data');
+            document.getElementById('btnChartHD').classList.toggle('active', m === 'hd');
+            renderAll();
         }
 
-        function setSection2Metric(metric) {
-            currentSec2Metric = metric;
-            document.getElementById('btnMetricSpend').classList.toggle('active', metric === 'spend');
-            document.getElementById('btnMetricDaily').classList.toggle('active', metric === 'daily');
-            document.getElementById('btnMetricPhones').classList.toggle('active', metric === 'phones');
-            renderDashboard();
+        function setTrendMode(m) {
+            trendMode = m;
+            document.getElementById('btnStackProd').classList.toggle('active', m === 'product');
+            document.getElementById('btnStackChannel').classList.toggle('active', m === 'channel');
+            renderAll();
         }
 
-        function setTimelineGranularity(gran) {
-            currentTimelineGranularity = gran;
-            document.getElementById('btnTimeMonth').classList.toggle('active', gran === 'month');
-            document.getElementById('btnTimeWeek').classList.toggle('active', gran === 'week');
-            document.getElementById('btnTimeDay').classList.toggle('active', gran === 'day');
-            renderDashboard();
+        function setTableMode(m) {
+            tableMode = m;
+            document.getElementById('btnTblCompare').classList.toggle('active', m === 'compare');
+            document.getElementById('btnTblMatrix').classList.toggle('active', m === 'matrix');
+            renderAll();
         }
 
-        function renderDashboard() {
-            const year = document.getElementById('yearSelect')?.value || '2026';
-            const selectedProd = document.getElementById('productSelect')?.value || 'ALL';
-            const prevMonth = document.getElementById('prevMonthSelect')?.value || '2026-10';
-            const currMonth = document.getElementById('currMonthSelect')?.value || '2026-11';
-            const fmtFilter = document.getElementById('formatSelect')?.value || 'ALL';
+        function renderAll() {
+            const year = document.getElementById('yearSelect').value;
+            const selProd = document.getElementById('productSelect').value;
+            const prevM = document.getElementById('prevMonthSelect').value;
+            const currM = document.getElementById('currMonthSelect').value;
 
-            // Lọc dữ liệu trong năm 2026 (theo Hình thức chạy)
-            const yearRows = RAW_DATA.filter(r => {
-                const d = String(r["Ngày"] || "").trim();
-                if (!d.startsWith(year)) return false;
-                if (fmtFilter !== 'ALL' && String(r["Hình thức chạy"] || "").trim() !== fmtFilter) return false;
-                return true;
-            });
+            const yearRows = RAW_DATA.filter(r => String(r["Năm"]) === String(year));
+            const allMonths = Array.from(new Set(yearRows.map(r => r["Mã Tháng"]).filter(Boolean))).sort();
 
-            // Gom theo Đầu sản phẩm -> Tháng
-            const entityMap = {};
-            const monthDaysSystem = {}; // ym -> Set(dates)
-            let systemTotal2026Spend = 0;
-            let systemTotal2026Phones = 0;
+            const prodMap = {};
+            let sysYearSpend = 0;
 
             yearRows.forEach(r => {
-                const d = String(r["Ngày"] || "").trim();
-                const ym = d.slice(0, 7);
-                const ent = getEntityName(r);
-                const sp = r["Chi tiêu"] || 0;
-                const ph = r["Sđt theo campain"] || 0;
-                const ms = r["Tin nhắn"] || 0;
+                const p = r["Tag Sản Phẩm"] || r["Sản Phẩm Gốc"] || "Khác";
+                const ym = r["Mã Tháng"];
+                const sp = getSpend(r);
+                const ch = getChannelSpend(r);
+                const dt = Number(r["SL Data Tổng"]) || 0;
+                const ms = Number(r["SL Mess"]) || 0;
+                const hd = Number(r["Tổng HĐ"]) || 0;
+                const ds = Number(r["Doanh Số Tổng"]) || 0;
 
-                if (!monthDaysSystem[ym]) monthDaysSystem[ym] = new Set();
-                monthDaysSystem[ym].add(d);
-
-                if (!entityMap[ent]) {
-                    entityMap[ent] = {
-                        name: ent,
-                        yearSpend: 0,
-                        yearPhones: 0,
-                        yearMsgs: 0,
-                        yearDays: new Set(),
+                if (!prodMap[p]) {
+                    prodMap[p] = {
+                        name: p,
+                        group: r["Nhóm Sản Phẩm"] || "",
+                        yearSpend: 0, yearData: 0, yearMess: 0, yearHD: 0, yearDS: 0,
                         months: {}
                     };
                 }
-                const eObj = entityMap[ent];
-                eObj.yearSpend += sp;
-                eObj.yearPhones += ph;
-                eObj.yearMsgs += ms;
-                eObj.yearDays.add(d);
+                const po = prodMap[p];
+                po.yearSpend += sp;
+                po.yearData += dt;
+                po.yearMess += ms;
+                po.yearHD += hd;
+                po.yearDS += ds;
+                sysYearSpend += sp;
 
-                if (!eObj.months[ym]) {
-                    eObj.months[ym] = { spend: 0, phones: 0, msgs: 0, days: new Set() };
+                if (!po.months[ym]) {
+                    po.months[ym] = { spend: 0, fbMess: 0, fbLdp: 0, tiktok: 0, data: 0, mess: 0, hd: 0, ds: 0 };
                 }
-                eObj.months[ym].spend += sp;
-                eObj.months[ym].phones += ph;
-                eObj.months[ym].msgs += ms;
-                eObj.months[ym].days.add(d);
-
-                systemTotal2026Spend += sp;
-                systemTotal2026Phones += ph;
+                po.months[ym].spend += sp;
+                po.months[ym].fbMess += ch.fbMess;
+                po.months[ym].fbLdp += ch.fbLdp;
+                po.months[ym].tiktok += ch.tiktok;
+                po.months[ym].data += dt;
+                po.months[ym].mess += ms;
+                po.months[ym].hd += hd;
+                po.months[ym].ds += ds;
             });
 
-            const prevDaysSys = (monthDaysSystem[prevMonth] && monthDaysSystem[prevMonth].size) || 1;
-            const currDaysSys = (monthDaysSystem[currMonth] && monthDaysSystem[currMonth].size) || 1;
-
-            // Tính toán bảng Section 1
-            const allEntityRows = Object.values(entityMap).map(e => {
-                const mPrev = e.months[prevMonth] || { spend: 0, phones: 0, msgs: 0, days: new Set() };
-                const mCurr = e.months[currMonth] || { spend: 0, phones: 0, msgs: 0, days: new Set() };
-
-                const shareYear = systemTotal2026Spend > 0 ? (e.yearSpend / systemTotal2026Spend * 100) : 0;
-                const diffSpend = mCurr.spend - mPrev.spend;
-                const deltaMonthPct = mPrev.spend > 0 ? ((mCurr.spend - mPrev.spend) / mPrev.spend * 100) : (mCurr.spend > 0 ? 100 : 0);
-
-                // Tốc độ chi tiêu TB/ngày của tháng (chia cho số ngày thực tế của tháng có chạy hoặc số ngày hệ thống)
-                const dailyPrev = mPrev.spend / prevDaysSys;
-                const dailyCurr = mCurr.spend / currDaysSys;
-                const deltaDailyPct = dailyPrev > 0 ? ((dailyCurr - dailyPrev) / dailyPrev * 100) : (dailyCurr > 0 ? 100 : 0);
-
-                const deltaPhonesPct = mPrev.phones > 0 ? ((mCurr.phones - mPrev.phones) / mPrev.phones * 100) : (mCurr.phones > 0 ? 100 : 0);
-                const cplPrev = mPrev.phones > 0 ? (mPrev.spend / mPrev.phones) : 0;
-                const cplCurr = mCurr.phones > 0 ? (mCurr.spend / mCurr.phones) : 0;
-                const deltaCplPct = (cplPrev > 0 && cplCurr > 0) ? ((cplCurr - cplPrev) / cplPrev * 100) : 0;
-
-                // Đánh giá biến thiên
-                let statusHtml = `<span class="badge badge-neutral">Ổn định</span>`;
-                if (mCurr.spend >= 1000000 && mCurr.phones === 0) {
-                    statusHtml = `<span class="badge badge-down">🛑 Đốt tiền (0 SĐT)</span>`;
-                } else if (deltaDailyPct > 15 && cplCurr > 0 && (cplPrev === 0 || cplCurr <= cplPrev * 1.15)) {
-                    statusHtml = `<span class="badge badge-up">🚀 Mở rộng hiệu quả (+${deltaDailyPct.toFixed(0)}%/ngày)</span>`;
-                } else if (deltaDailyPct > 10 && cplPrev > 0 && cplCurr > cplPrev * 1.20) {
-                    statusHtml = `<span class="badge badge-warn">⚠️ Tăng chi nhưng CPL đắt (+${deltaCplPct.toFixed(0)}%)</span>`;
-                } else if (mCurr.phones > 0 && cplCurr <= 280000) {
-                    statusHtml = `<span class="badge badge-info">💎 CPL tối ưu (${formatShortMoney(cplCurr)})</span>`;
-                } else if (deltaDailyPct < -20) {
-                    statusHtml = `<span class="badge badge-neutral">🔽 Thu hẹp ngân sách (${deltaDailyPct.toFixed(0)}%/ngày)</span>`;
-                }
+            const summaryRows = Object.values(prodMap).map(p => {
+                const mp = p.months[prevM] || { spend: 0, fbMess: 0, fbLdp: 0, tiktok: 0, data: 0, mess: 0, hd: 0, ds: 0 };
+                const mc = p.months[currM] || { spend: 0, fbMess: 0, fbLdp: 0, tiktok: 0, data: 0, mess: 0, hd: 0, ds: 0 };
+                const shareYear = sysYearSpend > 0 ? (p.yearSpend / sysYearSpend * 100) : 0;
+                const diffSpend = mc.spend - mp.spend;
+                const deltaSpendPct = mp.spend > 0 ? ((mc.spend - mp.spend) / mp.spend * 100) : (mc.spend > 0 ? 100 : 0);
+                const cplPrev = mp.data > 0 ? (mp.spend / mp.data) : 0;
+                const cplCurr = mc.data > 0 ? (mc.spend / mc.data) : 0;
 
                 return {
-                    name: e.name,
-                    yearSpend: e.yearSpend,
-                    yearPhones: e.yearPhones,
+                    ...p,
                     shareYear,
-                    mPrev,
-                    mCurr,
+                    mp,
+                    mc,
                     diffSpend,
-                    deltaMonthPct,
-                    dailyPrev,
-                    dailyCurr,
-                    deltaDailyPct,
-                    deltaPhonesPct,
+                    deltaSpendPct,
                     cplPrev,
-                    cplCurr,
-                    deltaCplPct,
-                    statusHtml
+                    cplCurr
                 };
             }).sort((a, b) => b.yearSpend - a.yearSpend);
 
-            lastSection1Rows = allEntityRows;
+            currentSummaryRows = summaryRows;
 
-            // Dữ liệu hiển thị cho KPI (Nếu đang chọn 1 sản phẩm thì tính riêng sản phẩm đó, nếu ALL thì tính toàn hệ thống)
-            const kpiTargetRows = selectedProd === 'ALL'
-                ? allEntityRows
-                : allEntityRows.filter(r => r.name === selectedProd);
-
-            renderSection1KPIs(kpiTargetRows, selectedProd, year, prevMonth, currMonth, prevDaysSys, currDaysSys, systemTotal2026Spend);
-            renderSection1Table(allEntityRows, selectedProd, prevMonth, currMonth, prevDaysSys, currDaysSys);
-            renderSection2Charts(allEntityRows, yearRows, selectedProd, prevMonth, currMonth, prevDaysSys, currDaysSys);
+            const kpiRows = selProd === 'ALL' ? summaryRows : summaryRows.filter(r => r.name === selProd);
+            renderSection1KPIs(kpiRows, selProd, year, prevM, currM, sysYearSpend);
+            renderSection2Charts(summaryRows, yearRows, allMonths, selProd, year, prevM, currM);
+            renderMainTable(summaryRows, allMonths, selProd, year, prevM, currM);
         }
 
-        // ─── RENDER SECTION 1 KPIs ───
-        function renderSection1KPIs(rows, selectedProd, year, prevMonth, currMonth, prevDaysSys, currDaysSys, systemTotal2026Spend) {
-            const totalYearSpend = rows.reduce((s, r) => s + r.yearSpend, 0);
-            const totalYearPhones = rows.reduce((s, r) => s + r.yearPhones, 0);
-            const yearCpl = totalYearPhones > 0 ? (totalYearSpend / totalYearPhones) : 0;
-            const shareOfSystem = systemTotal2026Spend > 0 ? (totalYearSpend / systemTotal2026Spend * 100) : 0;
+        function renderSection1KPIs(rows, selProd, year, prevM, currM, sysYearSpend) {
+            const ySpend = rows.reduce((s, r) => s + r.yearSpend, 0);
+            const yData = rows.reduce((s, r) => s + r.yearData, 0);
+            const yHD = rows.reduce((s, r) => s + r.yearHD, 0);
+            const yShare = sysYearSpend > 0 ? (ySpend / sysYearSpend * 100) : 0;
 
-            const prevSpend = rows.reduce((s, r) => s + r.mPrev.spend, 0);
-            const prevPhones = rows.reduce((s, r) => s + r.mPrev.phones, 0);
-            const prevCpl = prevPhones > 0 ? (prevSpend / prevPhones) : 0;
-            const prevDaily = prevSpend / prevDaysSys;
+            const pSpend = rows.reduce((s, r) => s + r.mp.spend, 0);
+            const pData = rows.reduce((s, r) => s + r.mp.data, 0);
+            const pHD = rows.reduce((s, r) => s + r.mp.hd, 0);
+            const pCPL = pData > 0 ? (pSpend / pData) : 0;
 
-            const currSpend = rows.reduce((s, r) => s + r.mCurr.spend, 0);
-            const currPhones = rows.reduce((s, r) => s + r.mCurr.phones, 0);
-            const currCpl = currPhones > 0 ? (currSpend / currPhones) : 0;
-            const currDaily = currSpend / currDaysSys;
+            const cSpend = rows.reduce((s, r) => s + r.mc.spend, 0);
+            const cData = rows.reduce((s, r) => s + r.mc.data, 0);
+            const cHD = rows.reduce((s, r) => s + r.mc.hd, 0);
+            const cCPL = cData > 0 ? (cSpend / cData) : 0;
 
-            const diffMonthSpend = currSpend - prevSpend;
-            const deltaMonthPct = prevSpend > 0 ? ((currSpend - prevSpend) / prevSpend * 100) : (currSpend > 0 ? 100 : 0);
-            const deltaDailyPct = prevDaily > 0 ? ((currDaily - prevDaily) / prevDaily * 100) : (currDaily > 0 ? 100 : 0);
-            const deltaPhonesPct = prevPhones > 0 ? ((currPhones - prevPhones) / prevPhones * 100) : 0;
+            const diffSpend = cSpend - pSpend;
+            const deltaPct = pSpend > 0 ? ((cSpend - pSpend) / pSpend * 100) : (cSpend > 0 ? 100 : 0);
+            const deltaDataPct = pData > 0 ? ((cData - pData) / pData * 100) : 0;
 
-            const scopeTitle = selectedProd === 'ALL' ? 'TOÀN BỘ ĐẦU SẢN PHẨM' : `ĐẦU SP: ${selectedProd.toUpperCase()}`;
+            const scope = selProd === 'ALL' ? `Tất cả sản phẩm` : selProd;
+            document.getElementById('sec1Title').textContent = `Tổng Chi Tiêu Năm ${year} (${scope}) & So Sánh ${prevM} ➔ ${currM}`;
 
-            document.getElementById('section1KpiGrid').innerHTML = `
-                <!-- KPI 1: Tổng Chi Tiêu Năm 2026 -->
-                <div class="kpi-card" style="--accent: #6366f1;">
-                    <div class="kpi-head">
-                        <span>💰 TỔNG CHI TIÊU NĂM ${year} (${scopeTitle})</span>
-                    </div>
-                    <div class="kpi-main-val">${formatMoney(totalYearSpend)}</div>
-                    <div class="kpi-meta">
-                        <span>Tỷ trọng năm: <b>${shareOfSystem.toFixed(1)}%</b></span>
-                        <span>Tổng SĐT 2026: <b style="color:#34d399;">${formatNum(totalYearPhones)} SĐT</b> (${yearCpl > 0 ? formatShortMoney(yearCpl) : '--'}/SĐT)</span>
+            document.getElementById('sec1KpiGrid').innerHTML = `
+                <div class="kpi-box" style="--accent: #6366f1;">
+                    <div class="kpi-name"><span>💰 Tổng Chi Tiêu ${year}</span> <span>${yShare.toFixed(1)}% hệ thống</span></div>
+                    <div class="kpi-num">${fmtVND(ySpend)}</div>
+                    <div class="kpi-foot">
+                        <span>Data ${year}: <b>${fmtNum(yData)}</b></span>
+                        <span>Hợp đồng: <b style="color:#34d399;">${fmtNum(yHD)} HĐ</b></span>
                     </div>
                 </div>
 
-                <!-- KPI 2: Chi Tiêu Tháng Trước -->
-                <div class="kpi-card" style="--accent: #3b82f6;">
-                    <div class="kpi-head">
-                        <span>⏪ THÁNG TRƯỚC: ${formatMonthLabel(prevMonth)} (${prevDaysSys} ngày)</span>
-                    </div>
-                    <div class="kpi-main-val">${formatMoney(prevSpend)}</div>
-                    <div class="kpi-meta">
-                        <span>TB/ngày: <b>${formatShortMoney(prevDaily)}/ngày</b></span>
-                        <span>SĐT: <b style="color:#34d399;">${formatNum(prevPhones)}</b> (CPL: <b>${prevCpl > 0 ? formatShortMoney(prevCpl) : '--'}</b>)</span>
+                <div class="kpi-box" style="--accent: #3b82f6;">
+                    <div class="kpi-name"><span>⏪ Tháng Trước (${prevM})</span> <span>CPL: ${pCPL > 0 ? fmtShort(pCPL) : '--'}</span></div>
+                    <div class="kpi-num">${fmtVND(pSpend)}</div>
+                    <div class="kpi-foot">
+                        <span>Data: <b>${fmtNum(pData)}</b></span>
+                        <span>Hợp đồng: <b>${fmtNum(pHD)} HĐ</b></span>
                     </div>
                 </div>
 
-                <!-- KPI 3: Chi Tiêu Tháng Hiện Tại -->
-                <div class="kpi-card" style="--accent: #10b981;">
-                    <div class="kpi-head">
-                        <span>⏩ THÁNG HIỆN TẠI: ${formatMonthLabel(currMonth)} (${currDaysSys} ngày)</span>
-                    </div>
-                    <div class="kpi-main-val" style="color:#34d399;">${formatMoney(currSpend)}</div>
-                    <div class="kpi-meta">
-                        <span>TB/ngày: <b>${formatShortMoney(currDaily)}/ngày</b></span>
-                        <span>SĐT: <b style="color:#34d399;">${formatNum(currPhones)}</b> (CPL: <b>${currCpl > 0 ? formatShortMoney(currCpl) : '--'}</b>)</span>
+                <div class="kpi-box" style="--accent: #10b981;">
+                    <div class="kpi-name"><span>⏩ Tháng Hiện Tại (${currM})</span> <span>CPL: ${cCPL > 0 ? fmtShort(cCPL) : '--'}</span></div>
+                    <div class="kpi-num" style="color:#34d399;">${fmtVND(cSpend)}</div>
+                    <div class="kpi-foot">
+                        <span>Data: <b>${fmtNum(cData)}</b></span>
+                        <span>Hợp đồng: <b style="color:#34d399;">${fmtNum(cHD)} HĐ</b></span>
                     </div>
                 </div>
 
-                <!-- KPI 4: So Sánh Tháng Trước vs Tháng Hiện Tại -->
-                <div class="kpi-card" style="--accent: #f59e0b;">
-                    <div class="kpi-head">
-                        <span>⚖️ SO SÁNH ${currMonth} VS ${prevMonth}</span>
+                <div class="kpi-box" style="--accent: #f59e0b;">
+                    <div class="kpi-name"><span>⚖️ Chênh Lệch (${currM} vs ${prevM})</span> <span>MoM</span></div>
+                    <div class="kpi-num" style="color:${deltaPct >= 0 ? '#fbbf24' : '#38bdf8'};">
+                        ${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%
                     </div>
-                    <div class="kpi-main-val" style="color:${deltaMonthPct >= 0 ? '#fbbf24' : '#38bdf8'};">
-                        ${deltaMonthPct >= 0 ? '+' : ''}${deltaMonthPct.toFixed(1)}% <small style="font-size:0.85rem; font-weight:700;">(${diffMonthSpend >= 0 ? '+' : ''}${formatShortMoney(diffMonthSpend)})</small>
-                    </div>
-                    <div class="kpi-meta">
-                        <span>Tốc độ chi/ngày: <b style="color:${deltaDailyPct >= 0 ? '#fbbf24' : '#34d399'};">${deltaDailyPct >= 0 ? '+' : ''}${deltaDailyPct.toFixed(1)}%</b></span>
-                        <span>Biến thiên SĐT: <b style="color:${deltaPhonesPct >= 0 ? '#34d399' : '#f87171'};">${deltaPhonesPct >= 0 ? '+' : ''}${deltaPhonesPct.toFixed(1)}%</b></span>
+                    <div class="kpi-foot">
+                        <span>Tiền: <b>${diffSpend >= 0 ? '+' : ''}${fmtShort(diffSpend)}</b></span>
+                        <span>Data: <b style="color:${deltaDataPct >= 0 ? '#34d399' : '#f87171'};">${deltaDataPct >= 0 ? '+' : ''}${deltaDataPct.toFixed(1)}%</b></span>
                     </div>
                 </div>
             `;
         }
 
-        // ─── RENDER SECTION 1 TABLE ───
-        function renderSection1Table(rows, selectedProd, prevMonth, currMonth, prevDaysSys, currDaysSys) {
-            document.getElementById('thPrevMonth').textContent = `Tháng Trước (${prevMonth})`;
-            document.getElementById('thCurrMonth').textContent = `Tháng Hiện Tại (${currMonth})`;
-
-            const tbody = document.getElementById('section1TableBody');
-            const displayRows = selectedProd === 'ALL' ? rows : rows.filter(r => r.name === selectedProd);
-
-            const html = displayRows.map(r => {
-                const isSelected = selectedProd === r.name;
-                const monthBadge = r.deltaMonthPct >= 0 ? 'badge-warn' : 'badge-info';
-                const dailyBadge = r.deltaDailyPct > 10 ? 'badge-warn' : r.deltaDailyPct < -10 ? 'badge-neutral' : 'badge-up';
-                const cplPrevStr = r.mPrev.phones > 0 ? formatShortMoney(r.cplPrev) : '--';
-                const cplCurrStr = r.mCurr.phones > 0 ? formatShortMoney(r.cplCurr) : (r.mCurr.spend > 0 ? '0 SĐT' : '--');
-
-                return `
-                    <tr class="${isSelected ? 'selected-row' : ''}" onclick="selectProductPill('${r.name === selectedProd ? 'ALL' : r.name.replace(/'/g, "\\'")}')" style="cursor:pointer;" title="Bấm để lọc riêng sản phẩm ${r.name}">
-                        <td><b>📦 ${r.name}</b></td>
-                        <td><b>${formatMoney(r.yearSpend)}</b></td>
-                        <td>
-                            <div class="bar-mini"><div class="bar-mini-fill" style="width:${Math.min(100, r.shareYear)}%; background:#6366f1;"></div></div>
-                            <b>${r.shareYear.toFixed(1)}%</b>
-                        </td>
-                        <td>${formatMoney(r.mPrev.spend)}</td>
-                        <td><b style="color:#34d399;">${formatMoney(r.mCurr.spend)}</b></td>
-                        <td style="color:${r.diffSpend >= 0 ? '#fbbf24' : '#94a3b8'}; font-weight:700;">
-                            ${r.diffSpend >= 0 ? '+' : ''}${formatMoney(r.diffSpend)}
-                        </td>
-                        <td><span class="badge ${monthBadge}">${r.deltaMonthPct >= 0 ? '+' : ''}${r.deltaMonthPct.toFixed(1)}%</span></td>
-                        <td>${formatShortMoney(r.dailyPrev)} ➔ <b>${formatShortMoney(r.dailyCurr)}</b></td>
-                        <td><span class="badge ${dailyBadge}">${r.deltaDailyPct >= 0 ? '+' : ''}${r.deltaDailyPct.toFixed(1)}%/ngày</span></td>
-                        <td><b>${r.mPrev.phones}</b> ➔ <b style="color:#34d399;">${r.mCurr.phones} SĐT</b></td>
-                        <td>${cplPrevStr} ➔ <b>${cplCurrStr}</b></td>
-                        <td>${r.statusHtml}</td>
-                    </tr>
-                `;
-            }).join('');
-
-            // Dòng tổng cộng
-            const totYear = displayRows.reduce((s, r) => s + r.yearSpend, 0);
-            const totPrev = displayRows.reduce((s, r) => s + r.mPrev.spend, 0);
-            const totCurr = displayRows.reduce((s, r) => s + r.mCurr.spend, 0);
-            const totDiff = totCurr - totPrev;
-            const totDeltaMonth = totPrev > 0 ? ((totCurr - totPrev) / totPrev * 100) : 0;
-            const totDailyPrev = totPrev / prevDaysSys;
-            const totDailyCurr = totCurr / currDaysSys;
-            const totDeltaDaily = totDailyPrev > 0 ? ((totDailyCurr - totDailyPrev) / totDailyPrev * 100) : 0;
-            const totPhonesPrev = displayRows.reduce((s, r) => s + r.mPrev.phones, 0);
-            const totPhonesCurr = displayRows.reduce((s, r) => s + r.mCurr.phones, 0);
-            const totCplPrev = totPhonesPrev > 0 ? formatShortMoney(totPrev / totPhonesPrev) : '--';
-            const totCplCurr = totPhonesCurr > 0 ? formatShortMoney(totCurr / totPhonesCurr) : '--';
-
-            const totalRow = `
-                <tr class="total-row">
-                    <td>TỔNG CỘNG (${selectedProd === 'ALL' ? 'TOÀN HỆ THỐNG' : selectedProd})</td>
-                    <td>${formatMoney(totYear)}</td>
-                    <td>${selectedProd === 'ALL' ? '100.0%' : displayRows[0]?.shareYear.toFixed(1) + '%'}</td>
-                    <td>${formatMoney(totPrev)}</td>
-                    <td>${formatMoney(totCurr)}</td>
-                    <td>${totDiff >= 0 ? '+' : ''}${formatMoney(totDiff)}</td>
-                    <td>${totDeltaMonth >= 0 ? '+' : ''}${totDeltaMonth.toFixed(1)}%</td>
-                    <td>${formatShortMoney(totDailyPrev)} ➔ ${formatShortMoney(totDailyCurr)}</td>
-                    <td>${totDeltaDaily >= 0 ? '+' : ''}${totDeltaDaily.toFixed(1)}%/ngày</td>
-                    <td>${totPhonesPrev} ➔ ${totPhonesCurr} SĐT</td>
-                    <td>${totCplPrev} ➔ ${totCplCurr}</td>
-                    <td>Tổng SĐT Năm 2026: ${displayRows.reduce((s, r) => s + r.yearPhones, 0)} SĐT</td>
-                </tr>
-            `;
-
-            tbody.innerHTML = html + totalRow;
-        }
-
-        // ─── RENDER SECTION 2: BIỂU ĐỒ CHI TIÊU CÁC SẢN PHẨM ───
         function getThemeColors() {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
             return {
                 text: isDark ? '#94a3b8' : '#475569',
-                grid: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(15, 23, 42, 0.07)'
+                grid: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.06)'
             };
         }
 
-        function renderSection2Charts(allEntityRows, yearRows, selectedProd, prevMonth, currMonth, prevDaysSys, currDaysSys) {
+        function renderSection2Charts(summaryRows, yearRows, allMonths, selProd, year, prevM, currM) {
             const colors = getThemeColors();
 
-            // 1. Biểu đồ 2.1: So sánh Chi tiêu các sản phẩm Tháng trước vs Tháng hiện tại
-            const ctxCompare = document.getElementById('chartProductMonthCompare').getContext('2d');
-            const chartRows = allEntityRows.filter(r => r.yearSpend > 0);
-            const labels = chartRows.map(r => r.name);
+            // 1. Chart 2A: Compare prevM vs currM per product
+            const activeCompare = summaryRows.filter(r => r.mp.spend > 0 || r.mc.spend > 0);
+            const labelsA = activeCompare.map(r => r.name);
+            document.getElementById('compareChartTitle').textContent = `1. Chi Tiêu Sản Phẩm: ${prevM} vs. ${currM}`;
 
-            let datasetsCompare = [];
-            if (currentSec2Metric === 'daily') {
-                document.getElementById('chartCompareTitle').textContent = `1️⃣ So Sánh Chi Tiêu TB/Ngày Các Sản Phẩm: ${prevMonth} vs. ${currMonth}`;
-                datasetsCompare = [
-                    {
-                        label: `TB/Ngày ${prevMonth}`,
-                        data: chartRows.map(r => Math.round(r.dailyPrev)),
-                        backgroundColor: 'rgba(59, 130, 246, 0.75)',
-                        borderRadius: 6
-                    },
-                    {
-                        label: `TB/Ngày ${currMonth}`,
-                        data: chartRows.map(r => Math.round(r.dailyCurr)),
-                        backgroundColor: 'rgba(16, 185, 129, 0.85)',
-                        borderRadius: 6
-                    }
-                ];
-            } else if (currentSec2Metric === 'phones') {
-                document.getElementById('chartCompareTitle').textContent = `1️⃣ So Sánh Tổng Chi Tiêu & SĐT Các Sản Phẩm: ${prevMonth} vs. ${currMonth}`;
-                datasetsCompare = [
-                    {
-                        label: `Chi tiêu ${prevMonth}`,
-                        data: chartRows.map(r => Math.round(r.mPrev.spend)),
-                        backgroundColor: 'rgba(59, 130, 246, 0.65)',
-                        borderRadius: 6,
-                        yAxisID: 'ySpend'
-                    },
-                    {
-                        label: `Chi tiêu ${currMonth}`,
-                        data: chartRows.map(r => Math.round(r.mCurr.spend)),
-                        backgroundColor: 'rgba(16, 185, 129, 0.78)',
-                        borderRadius: 6,
-                        yAxisID: 'ySpend'
-                    },
-                    {
-                        label: `SĐT ${currMonth}`,
-                        data: chartRows.map(r => r.mCurr.phones),
-                        type: 'line',
-                        borderColor: '#f59e0b',
-                        backgroundColor: '#f59e0b',
-                        borderWidth: 2.5,
-                        pointRadius: 5,
-                        yAxisID: 'yPhones'
-                    }
-                ];
-            } else {
-                document.getElementById('chartCompareTitle').textContent = `1️⃣ Biểu Đồ So Sánh Chi Tiêu Các Sản Phẩm: Tháng Trước (${prevMonth}) vs. Tháng Hiện Tại (${currMonth})`;
-                datasetsCompare = [
-                    {
-                        label: `Tháng Trước (${prevMonth})`,
-                        data: chartRows.map(r => Math.round(r.mPrev.spend)),
-                        backgroundColor: chartRows.map(r => (selectedProd === 'ALL' || selectedProd === r.name) ? 'rgba(99, 102, 241, 0.78)' : 'rgba(99, 102, 241, 0.22)'),
-                        borderRadius: 6
-                    },
-                    {
-                        label: `Tháng Hiện Tại (${currMonth})`,
-                        data: chartRows.map(r => Math.round(r.mCurr.spend)),
-                        backgroundColor: chartRows.map(r => (selectedProd === 'ALL' || selectedProd === r.name) ? 'rgba(16, 185, 129, 0.85)' : 'rgba(16, 185, 129, 0.22)'),
-                        borderRadius: 6
-                    }
-                ];
+            const datasetsA = [
+                {
+                    label: prevM,
+                    data: activeCompare.map(r => r.mp.spend),
+                    backgroundColor: activeCompare.map(r => (selProd === 'ALL' || selProd === r.name) ? 'rgba(99, 102, 241, 0.78)' : 'rgba(99, 102, 241, 0.22)'),
+                    borderRadius: 6,
+                    yAxisID: 'ySpend'
+                },
+                {
+                    label: currM,
+                    data: activeCompare.map(r => r.mc.spend),
+                    backgroundColor: activeCompare.map(r => (selProd === 'ALL' || selProd === r.name) ? 'rgba(16, 185, 129, 0.85)' : 'rgba(16, 185, 129, 0.22)'),
+                    borderRadius: 6,
+                    yAxisID: 'ySpend'
+                }
+            ];
+
+            if (chartMetric === 'data') {
+                datasetsA.push({
+                    label: `Data (${currM})`,
+                    data: activeCompare.map(r => r.mc.data),
+                    type: 'line',
+                    borderColor: '#f59e0b',
+                    backgroundColor: '#f59e0b',
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    yAxisID: 'yCount'
+                });
+            } else if (chartMetric === 'hd') {
+                datasetsA.push({
+                    label: `Hợp đồng (${currM})`,
+                    data: activeCompare.map(r => r.mc.hd),
+                    type: 'line',
+                    borderColor: '#ec4899',
+                    backgroundColor: '#ec4899',
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    yAxisID: 'yCount'
+                });
             }
 
-            if (chartCompareInstance) chartCompareInstance.destroy();
-            chartCompareInstance = new Chart(ctxCompare, {
+            const ctxA = document.getElementById('chartMonthCompare').getContext('2d');
+            if (chartCompareInst) chartCompareInst.destroy();
+            chartCompareInst = new Chart(ctxA, {
                 type: 'bar',
-                data: { labels, datasets: datasetsCompare },
+                data: { labels: labelsA, datasets: datasetsA },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    onClick: (evt, els) => {
-                        if (els.length > 0) {
-                            const clickedProd = labels[els[0].index];
-                            selectProductPill(selectedProd === clickedProd ? 'ALL' : clickedProd);
-                        }
+                    onClick: (e, els) => {
+                        if (els.length > 0) selectProduct(labelsA[els[0].index]);
                     },
                     plugins: {
-                        legend: { position: 'top', labels: { color: colors.text, font: { weight: 600 } } },
+                        legend: { position: 'top', labels: { color: colors.text, boxWidth: 12, font: { size: 11, weight: 600 } } },
                         tooltip: {
                             callbacks: {
-                                label: (ctx) => {
-                                    if (ctx.dataset.yAxisID === 'yPhones') return `${ctx.dataset.label}: ${ctx.raw} SĐT`;
-                                    return `${ctx.dataset.label}: ${formatMoney(ctx.raw)}`;
-                                }
+                                label: (ctx) => ctx.dataset.yAxisID === 'yCount'
+                                    ? `${ctx.dataset.label}: ${fmtNum(ctx.raw)}`
+                                    : `${ctx.dataset.label}: ${fmtVND(ctx.raw)}`
                             }
                         }
                     },
                     scales: {
                         x: { grid: { color: colors.grid }, ticks: { color: colors.text, font: { weight: 600 } } },
                         ySpend: {
-                            type: 'linear',
                             position: 'left',
                             grid: { color: colors.grid },
-                            ticks: { color: colors.text, callback: v => formatShortMoney(v) }
+                            ticks: { color: colors.text, callback: v => fmtShort(v) }
                         },
-                        ...(currentSec2Metric === 'phones' ? {
-                            yPhones: {
-                                type: 'linear',
+                        ...(chartMetric !== 'spend' ? {
+                            yCount: {
                                 position: 'right',
                                 grid: { drawOnChartArea: false },
                                 ticks: { color: '#f59e0b', precision: 0 }
@@ -1292,16 +961,17 @@ html_content = """<!DOCTYPE html>
                 }
             });
 
-            // 2. Biểu đồ 2.2: Cơ cấu Tỷ trọng Chi tiêu Năm 2026 giữa các Đầu sản phẩm
-            const ctxShare = document.getElementById('chartProductShare2026').getContext('2d');
-            if (chartShareInstance) chartShareInstance.destroy();
-            chartShareInstance = new Chart(ctxShare, {
+            // 2. Chart 2B: Year Share Doughnut
+            document.getElementById('shareChartTitle').textContent = `2. Tỷ Trọng Ngân Sách Năm ${year}`;
+            const ctxB = document.getElementById('chartYearShare').getContext('2d');
+            if (chartShareInst) chartShareInst.destroy();
+            chartShareInst = new Chart(ctxB, {
                 type: 'doughnut',
                 data: {
-                    labels: chartRows.map(r => `${r.name} (${r.shareYear.toFixed(1)}%)`),
+                    labels: summaryRows.map(r => `${r.name} (${r.shareYear.toFixed(1)}%)`),
                     datasets: [{
-                        data: chartRows.map(r => Math.round(r.yearSpend)),
-                        backgroundColor: PRODUCT_PALETTE,
+                        data: summaryRows.map(r => r.yearSpend),
+                        backgroundColor: PALETTE,
                         borderWidth: 2,
                         borderColor: 'transparent'
                     }]
@@ -1310,19 +980,16 @@ html_content = """<!DOCTYPE html>
                     responsive: true,
                     maintainAspectRatio: false,
                     cutout: '62%',
-                    onClick: (evt, els) => {
-                        if (els.length > 0) {
-                            const clickedProd = chartRows[els[0].index].name;
-                            selectProductPill(selectedProd === clickedProd ? 'ALL' : clickedProd);
-                        }
+                    onClick: (e, els) => {
+                        if (els.length > 0) selectProduct(summaryRows[els[0].index].name);
                     },
                     plugins: {
-                        legend: { position: 'right', labels: { color: colors.text, font: { size: 11, weight: 600 } } },
+                        legend: { position: 'right', labels: { color: colors.text, boxWidth: 11, font: { size: 11, weight: 600 } } },
                         tooltip: {
                             callbacks: {
                                 label: (ctx) => {
-                                    const r = chartRows[ctx.dataIndex];
-                                    return `${r.name}: ${formatMoney(r.yearSpend)} (${r.shareYear.toFixed(1)}% | ${r.yearPhones} SĐT)`;
+                                    const r = summaryRows[ctx.dataIndex];
+                                    return `${r.name}: ${fmtVND(r.yearSpend)} (${r.shareYear.toFixed(1)}%)`;
                                 }
                             }
                         }
@@ -1330,173 +997,259 @@ html_content = """<!DOCTYPE html>
                 }
             });
 
-            // 3. Biểu đồ 2.3: Diễn biến Chi tiêu các sản phẩm theo Thời gian (Tháng / Tuần / Ngày)
-            const ctxTime = document.getElementById('chartProductTimeline').getContext('2d');
-            const filteredTimeRows = selectedProd === 'ALL'
-                ? yearRows
-                : yearRows.filter(r => getEntityName(r) === selectedProd);
+            // 3. Chart 2C: Monthly Trend across Year
+            const ctxC = document.getElementById('chartMonthlyTrend').getContext('2d');
+            const targetList = selProd === 'ALL' ? summaryRows.slice(0, 9) : summaryRows.filter(r => r.name === selProd);
+            document.getElementById('trendChartTitle').textContent = `3. Xu Hướng Chi Tiêu Qua Các Tháng Năm ${year} (${selProd === 'ALL' ? 'Tất cả SP' : selProd})`;
 
-            const bucketSet = new Set();
-            const entTimeMap = {}; // ent -> bucket -> {spend, phones}
-            const bucketPhones = {};
+            let datasetsC = [];
+            if (trendMode === 'channel') {
+                datasetsC = [
+                    {
+                        label: 'FB Mess Ads',
+                        data: allMonths.map(m => targetList.reduce((s, r) => s + ((r.months[m] && r.months[m].fbMess) || 0), 0)),
+                        backgroundColor: '#6366f1',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'FB Landing (CĐ)',
+                        data: allMonths.map(m => targetList.reduce((s, r) => s + ((r.months[m] && r.months[m].fbLdp) || 0), 0)),
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'TikTok Ads',
+                        data: allMonths.map(m => targetList.reduce((s, r) => s + ((r.months[m] && r.months[m].tiktok) || 0), 0)),
+                        backgroundColor: '#ec4899',
+                        borderRadius: 4
+                    }
+                ];
+            } else {
+                datasetsC = targetList.map((r, i) => ({
+                    label: r.name,
+                    data: allMonths.map(m => (r.months[m] && r.months[m].spend) || 0),
+                    backgroundColor: PALETTE[i % PALETTE.length],
+                    borderRadius: 4
+                }));
+            }
 
-            filteredTimeRows.forEach(r => {
-                const d = String(r["Ngày"] || "").trim();
-                const bKey = currentTimelineGranularity === 'month'
-                    ? d.slice(0, 7)
-                    : (currentTimelineGranularity === 'week' ? getIsoWeekKey(d) : d.slice(5));
-                bucketSet.add(bKey);
-                const ent = getEntityName(r);
-                if (!entTimeMap[ent]) entTimeMap[ent] = {};
-                if (!entTimeMap[ent][bKey]) entTimeMap[ent][bKey] = 0;
-                entTimeMap[ent][bKey] += (r["Chi tiêu"] || 0);
-                bucketPhones[bKey] = (bucketPhones[bKey] || 0) + (r["Sđt theo campain"] || 0);
-            });
-
-            const sortedBuckets = Array.from(bucketSet).sort();
-            const activeEntities = (selectedProd === 'ALL' ? chartRows.slice(0, 8).map(r => r.name) : [selectedProd]);
-
-            const timeDatasets = activeEntities.map((ent, idx) => ({
-                label: ent,
-                data: sortedBuckets.map(b => Math.round((entTimeMap[ent] && entTimeMap[ent][b]) || 0)),
-                backgroundColor: PRODUCT_PALETTE[idx % PRODUCT_PALETTE.length],
-                borderRadius: 4,
-                yAxisID: 'ySpend',
-                order: 2
-            }));
-
-            // Thêm đường Tổng SĐT lên trên cột chồng
-            timeDatasets.push({
-                label: 'Tổng SĐT Pancake',
-                data: sortedBuckets.map(b => bucketPhones[b] || 0),
-                type: 'line',
-                borderColor: '#34d399',
-                backgroundColor: '#34d399',
-                borderWidth: 2.5,
-                pointRadius: 4,
-                tension: 0.25,
-                yAxisID: 'yPhones',
-                order: 1
-            });
-
-            if (chartTimelineInstance) chartTimelineInstance.destroy();
-            chartTimelineInstance = new Chart(ctxTime, {
+            if (chartTrendInst) chartTrendInst.destroy();
+            chartTrendInst = new Chart(ctxC, {
                 type: 'bar',
-                data: { labels: sortedBuckets, datasets: timeDatasets },
+                data: {
+                    labels: allMonths.map(m => `T${m.split('-')[1]}/${m.split('-')[0].slice(2)}`),
+                    datasets: datasetsC
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { position: 'top', labels: { color: colors.text, boxWidth: 12, font: { size: 11, weight: 600 } } },
+                        legend: { position: 'top', labels: { color: colors.text, boxWidth: 11, font: { size: 11, weight: 600 } } },
                         tooltip: {
                             callbacks: {
-                                label: (ctx) => {
-                                    if (ctx.dataset.yAxisID === 'yPhones') return `SĐT Pancake: ${ctx.raw} SĐT`;
-                                    return `${ctx.dataset.label}: ${formatMoney(ctx.raw)}`;
-                                }
+                                label: (ctx) => `${ctx.dataset.label}: ${fmtVND(ctx.raw)}`
                             }
                         }
                     },
                     scales: {
-                        x: { stacked: true, grid: { color: colors.grid }, ticks: { color: colors.text } },
-                        ySpend: {
+                        x: { stacked: true, grid: { color: colors.grid }, ticks: { color: colors.text, font: { weight: 600 } } },
+                        y: {
                             stacked: true,
-                            position: 'left',
                             grid: { color: colors.grid },
-                            ticks: { color: colors.text, callback: v => formatShortMoney(v) }
-                        },
-                        yPhones: {
-                            position: 'right',
-                            grid: { drawOnChartArea: false },
-                            ticks: { color: '#34d399', precision: 0 }
+                            ticks: { color: colors.text, callback: v => fmtShort(v) }
                         }
                     }
                 }
             });
         }
 
-        // ─── Đồng bộ Google Sheets ───
-        async function syncGoogleSheet() {
-            const badge = document.getElementById('syncBadge');
-            badge.textContent = '⏳ Đang đồng bộ...';
+        function renderMainTable(summaryRows, allMonths, selProd, year, prevM, currM) {
+            const thead = document.getElementById('mainTableHead');
+            const tbody = document.getElementById('mainTableBody');
+            const rows = selProd === 'ALL' ? summaryRows : summaryRows.filter(r => r.name === selProd);
+
+            if (tableMode === 'matrix') {
+                document.getElementById('tableModeTitle').textContent = `4. Ma Trận Chi Tiêu Sản Phẩm Qua Các Tháng Năm ${year}`;
+                thead.innerHTML = `
+                    <tr>
+                        <th>Sản Phẩm</th>
+                        ${allMonths.map(m => `<th style="text-align:right;">T${m.split('-')[1]}/${m.split('-')[0].slice(2)}</th>`).join('')}
+                        <th style="text-align:right;">Tổng Năm ${year}</th>
+                        <th style="text-align:right;">% Năm</th>
+                    </tr>
+                `;
+
+                const bodyHtml = rows.map(r => `
+                    <tr class="${selProd === r.name ? 'active-row' : ''}" onclick="selectProduct('${r.name}')" style="cursor:pointer;">
+                        <td><b>📦 ${r.name}</b></td>
+                        ${allMonths.map(m => {
+                            const sp = (r.months[m] && r.months[m].spend) || 0;
+                            return `<td style="text-align:right; color:${sp > 0 ? 'var(--text-primary)' : 'var(--text-muted)'};">${sp > 0 ? fmtShort(sp) : '--'}</td>`;
+                        }).join('')}
+                        <td style="text-align:right;"><b>${fmtVND(r.yearSpend)}</b></td>
+                        <td style="text-align:right;"><b>${r.shareYear.toFixed(1)}%</b></td>
+                    </tr>
+                `).join('');
+
+                const totYear = rows.reduce((s, r) => s + r.yearSpend, 0);
+                const totRow = `
+                    <tr class="total-row">
+                        <td>TỔNG CỘNG</td>
+                        ${allMonths.map(m => {
+                            const mSum = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].spend) || 0), 0);
+                            return `<td style="text-align:right;">${fmtShort(mSum)}</td>`;
+                        }).join('')}
+                        <td style="text-align:right;">${fmtVND(totYear)}</td>
+                        <td style="text-align:right;">100%</td>
+                    </tr>
+                `;
+                tbody.innerHTML = bodyHtml + totRow;
+                return;
+            }
+
+            // Mode: compare
+            document.getElementById('tableModeTitle').textContent = `4. Bảng Ngân Sách Sản Phẩm Năm ${year} & So Sánh ${prevM} ➔ ${currM}`;
+            thead.innerHTML = `
+                <tr>
+                    <th>Sản Phẩm</th>
+                    <th>Lũy Kế Năm ${year}</th>
+                    <th>% Tỷ Trọng</th>
+                    <th>Tháng Trước (${prevM})</th>
+                    <th>Tháng Hiện Tại (${currM})</th>
+                    <th>Chênh Lệch</th>
+                    <th>Δ% Tháng</th>
+                    <th>Data (${prevM}➔${currM})</th>
+                    <th>CPL (${prevM}➔${currM})</th>
+                    <th>HĐ (${prevM}➔${currM})</th>
+                    <th>Trạng Thái</th>
+                </tr>
+            `;
+
+            const bodyHtml = rows.map(r => {
+                let badge = `<span class="badge b-muted">Tạm dừng</span>`;
+                if (r.mc.spend > 0 || r.mp.spend > 0) {
+                    if (r.mc.spend > 0 && r.mp.spend === 0) badge = `<span class="badge b-info">🆕 Mới chạy</span>`;
+                    else if (r.deltaSpendPct > 10) badge = `<span class="badge b-warn">🔼 Tăng chi</span>`;
+                    else if (r.deltaSpendPct < -15) badge = `<span class="badge b-muted">🔽 Giảm chi</span>`;
+                    else badge = `<span class="badge b-up">✅ Ổn định</span>`;
+                }
+
+                const dBadge = r.deltaSpendPct > 0 ? 'b-warn' : (r.deltaSpendPct < 0 ? 'b-info' : 'b-muted');
+
+                return `
+                    <tr class="${selProd === r.name ? 'active-row' : ''}" onclick="selectProduct('${r.name}')" style="cursor:pointer;">
+                        <td><b>📦 ${r.name}</b></td>
+                        <td><b>${fmtVND(r.yearSpend)}</b></td>
+                        <td>
+                            <div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.min(100, r.shareYear)}%;"></div></div>
+                            <b>${r.shareYear.toFixed(1)}%</b>
+                        </td>
+                        <td>${fmtVND(r.mp.spend)}</td>
+                        <td><b style="color:#34d399;">${fmtVND(r.mc.spend)}</b></td>
+                        <td style="color:${r.diffSpend >= 0 ? '#fbbf24' : '#94a3b8'}; font-weight:700;">
+                            ${r.diffSpend >= 0 ? '+' : ''}${fmtShort(r.diffSpend)}
+                        </td>
+                        <td><span class="badge ${dBadge}">${r.deltaSpendPct >= 0 ? '+' : ''}${r.deltaSpendPct.toFixed(1)}%</span></td>
+                        <td>${r.mp.data} ➔ <b>${r.mc.data}</b></td>
+                        <td>${r.cplPrev > 0 ? fmtShort(r.cplPrev) : '--'} ➔ <b>${r.cplCurr > 0 ? fmtShort(r.cplCurr) : '--'}</b></td>
+                        <td>${r.mp.hd} ➔ <b style="color:#34d399;">${r.mc.hd}</b></td>
+                        <td>${badge}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const totY = rows.reduce((s, r) => s + r.yearSpend, 0);
+            const totP = rows.reduce((s, r) => s + r.mp.spend, 0);
+            const totC = rows.reduce((s, r) => s + r.mc.spend, 0);
+            const totDiff = totC - totP;
+            const totDelta = totP > 0 ? ((totC - totP) / totP * 100) : 0;
+            const totDataP = rows.reduce((s, r) => s + r.mp.data, 0);
+            const totDataC = rows.reduce((s, r) => s + r.mc.data, 0);
+            const totHDP = rows.reduce((s, r) => s + r.mp.hd, 0);
+            const totHDC = rows.reduce((s, r) => s + r.mc.hd, 0);
+
+            tbody.innerHTML = bodyHtml + `
+                <tr class="total-row">
+                    <td>TỔNG CỘNG</td>
+                    <td>${fmtVND(totY)}</td>
+                    <td>${selProd === 'ALL' ? '100.0%' : rows[0]?.shareYear.toFixed(1) + '%'}</td>
+                    <td>${fmtVND(totP)}</td>
+                    <td>${fmtVND(totC)}</td>
+                    <td>${totDiff >= 0 ? '+' : ''}${fmtShort(totDiff)}</td>
+                    <td>${totDelta >= 0 ? '+' : ''}${totDelta.toFixed(1)}%</td>
+                    <td>${totDataP} ➔ ${totDataC}</td>
+                    <td>${totDataP > 0 ? fmtShort(totP/totDataP) : '--'} ➔ ${totDataC > 0 ? fmtShort(totC/totDataC) : '--'}</td>
+                    <td>${totHDP} ➔ ${totHDC}</td>
+                    <td>Tổng ${rows.length} SP</td>
+                </tr>
+            `;
+        }
+
+        async function fetchFromGoogleSheet() {
+            const st = document.getElementById('syncStatusText');
+            st.textContent = '⏳ Đang đồng bộ từ Google Sheet...';
             try {
                 const resp = await fetch(GOOGLE_SHEET_CSV_URL, { cache: 'no-cache' });
                 if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                const text = await resp.text();
-                Papa.parse(text, {
+                const csvText = await resp.text();
+                Papa.parse(csvText, {
                     header: true,
                     dynamicTyping: true,
                     skipEmptyLines: true,
                     complete: (res) => {
                         if (res.data && res.data.length > 0) {
-                            RAW_DATA = res.data.map(r => ({
-                                "Tài khoản": r["Account Name"] || r["Tài khoản"] || "",
-                                "ID tài khoản": r["Account ID"] || r["ID tài khoản"] || "",
-                                "Ngày": String(r["Ngày"] || "").trim(),
-                                "Campaign ID": String(r["Campaign ID"] || ""),
-                                "Tên chiến dịch": r["Tên chiến dịch"] || "",
-                                "Sản phẩm": r["Sản phẩm"] || "",
-                                "Hình thức chạy": r["Hình thức chạy"] || "",
-                                "Trạng thái": r["Trạng thái"] || "UNKNOWN",
-                                "Chi tiêu": parseFloat(r["Chi tiêu"] || 0),
-                                "Hiển thị": parseInt(r["Hiển thị"] || 0),
-                                "Click link": parseInt(r["Click link"] || 0),
-                                "Tin nhắn": parseInt(r["Tin nhắn"] || 0),
-                                "Lead": parseInt(r["Lead"] || 0),
-                                "Đăng ký": parseInt(r["Đăng ký"] || 0),
-                                "Sđt theo campain": parseInt(r["Sđt theo campain"] || 0)
-                            }));
-                            badge.textContent = '🟢 Đã đồng bộ Google Sheet';
-                            initMonthSelectors();
-                            initProductOptions();
-                            renderDashboard();
+                            RAW_DATA = res.data;
+                            st.textContent = `🟢 Đã đồng bộ Google Sheet Online (${new Date().toLocaleTimeString('vi-VN')})`;
+                            const prev = document.getElementById('prevMonthSelect').value;
+                            const curr = document.getElementById('currMonthSelect').value;
+                            initSelectors();
+                            if (prev) document.getElementById('prevMonthSelect').value = prev;
+                            if (curr) document.getElementById('currMonthSelect').value = curr;
+                            renderAll();
                         }
                     }
                 });
             } catch (e) {
-                badge.textContent = '🟡 Dữ liệu Cục bộ 2026';
+                st.textContent = '🟢 Dữ liệu Lark Base & Google Sheet đã đồng bộ';
             }
         }
 
-        function exportSection1CSV() {
-            if (!lastSection1Rows.length) return;
-            const prevMonth = document.getElementById('prevMonthSelect').value;
-            const currMonth = document.getElementById('currMonthSelect').value;
-            const data = lastSection1Rows.map(r => ({
-                "Đầu sản phẩm": r.name,
-                "Tổng chi tiêu năm 2026": Math.round(r.yearSpend),
-                "Tỷ trọng năm 2026 (%)": +r.shareYear.toFixed(2),
-                [`Chi tiêu ${prevMonth}`]: Math.round(r.mPrev.spend),
-                [`Chi tiêu ${currMonth}`]: Math.round(r.mCurr.spend),
-                "Chênh lệch (VNĐ)": Math.round(r.diffSpend),
-                "Δ% Biến thiên tháng (%)": +r.deltaMonthPct.toFixed(2),
-                [`TB/Ngày ${prevMonth}`]: Math.round(r.dailyPrev),
-                [`TB/Ngày ${currMonth}`]: Math.round(r.dailyCurr),
-                "Δ% Tốc độ chi/ngày (%)": +r.deltaDailyPct.toFixed(2),
-                [`SĐT ${prevMonth}`]: r.mPrev.phones,
-                [`SĐT ${currMonth}`]: r.mCurr.phones,
-                [`CPL ${prevMonth}`]: Math.round(r.cplPrev),
-                [`CPL ${currMonth}`]: Math.round(r.cplCurr)
+        function exportCSV() {
+            if (!currentSummaryRows.length) return;
+            const prevM = document.getElementById('prevMonthSelect').value;
+            const currM = document.getElementById('currMonthSelect').value;
+            const data = currentSummaryRows.map(r => ({
+                "Sản phẩm": r.name,
+                "Tổng chi tiêu năm": Math.round(r.yearSpend),
+                "% Tỷ trọng năm": +r.shareYear.toFixed(2),
+                [`Chi tiêu ${prevM}`]: Math.round(r.mp.spend),
+                [`Chi tiêu ${currM}`]: Math.round(r.mc.spend),
+                "Chênh lệch": Math.round(r.diffSpend),
+                "Δ% Tháng": +r.deltaSpendPct.toFixed(2),
+                [`Data ${prevM}`]: r.mp.data,
+                [`Data ${currM}`]: r.mc.data,
+                [`HĐ ${prevM}`]: r.mp.hd,
+                [`HĐ ${currM}`]: r.mc.hd
             }));
             const csv = Papa.unparse(data);
             const blob = new Blob(["\\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `Chi_Tieu_San_Pham_2026_${prevMonth}_vs_${currMonth}.csv`;
+            a.download = `Ngan_Sach_San_Pham_${prevM}_vs_${currM}.csv`;
             a.click();
         }
 
         function toggleTheme() {
             const cur = document.documentElement.getAttribute('data-theme');
             document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
-            renderDashboard();
+            renderAll();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initMonthSelectors();
-            initProductOptions();
-            renderDashboard();
+            initSelectors();
+            renderAll();
+            fetchFromGoogleSheet();
         });
     </script>
 </body>
@@ -1506,5 +1259,5 @@ html_content = """<!DOCTYPE html>
 with open(html_path, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print(f"✅ Đã cập nhật Dashboard theo thiết kế Section 1 & Section 2 tại: {html_path}")
+print(f"✅ Đã biên dịch thành công Dashboard tại: {html_path}")
 print(f"Dung lượng file: {os.path.getsize(html_path) / 1024:.1f} KB")
