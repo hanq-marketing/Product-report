@@ -612,6 +612,7 @@
                     <button class="switch-btn active" id="btnChartSpend" onclick="setChartMetric('spend')">💰 Chi Tiêu</button>
                     <button class="switch-btn" id="btnChartData" onclick="setChartMetric('data')">📱 Chi Tiêu + Data</button>
                     <button class="switch-btn" id="btnChartHD" onclick="setChartMetric('hd')">📝 Chi Tiêu + HĐ</button>
+                    <button class="switch-btn" id="btnChartDS" onclick="setChartMetric('ds')">💵 Chi Tiêu + Doanh Số</button>
                 </div>
             </div>
 
@@ -647,6 +648,7 @@
                     <span id="trendChartTitle">3. Diễn Biến Qua Các Tháng Trong Năm (T01 ➔ T11)</span>
                     <div class="switch-group">
                         <button class="switch-btn active" id="btnStackProd" onclick="setTrendMode('product')">Chi Tiêu Theo SP</button>
+                        <button class="switch-btn" id="btnStackRevenue" onclick="setTrendMode('revenue')">💵 Doanh Số Theo SP</button>
                         <button class="switch-btn" id="btnStackChannel" onclick="setTrendMode('channel')">Chi Tiêu Theo Kênh</button>
                         <button class="switch-btn" id="btnStackCpl" onclick="setTrendMode('cpl')">🎯 CPL Qua Các Tháng vs. KH</button>
                     </div>
@@ -664,6 +666,7 @@
                         <button class="switch-btn active" id="btnTblCompare" onclick="setTableMode('compare')">So Sánh Tháng & CPL KH</button>
                         <button class="switch-btn" id="btnTblCplMatrix" onclick="setTableMode('cpl_matrix')">🎯 Ma Trận CPL 11 Tháng vs. KH</button>
                         <button class="switch-btn" id="btnTblMatrix" onclick="setTableMode('matrix')">💰 Ma Trận Chi Tiêu 11 Tháng</button>
+                        <button class="switch-btn" id="btnTblDsMatrix" onclick="setTableMode('ds_matrix')">💵 Ma Trận Doanh Số 11 Tháng</button>
                     </div>
                     <button class="btn" style="height:28px; padding:0 0.6rem; font-size:0.72rem;" onclick="exportCSV()">📥 Xuất CSV</button>
                 </div>
@@ -691,10 +694,11 @@
                 </div>
                 <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
                     <div class="switch-group">
-                        <button class="switch-btn active" id="btnPerfAll" onclick="setPerfTableMode('all')">📊 Tổng Hợp (CPL • CĐ • CP/HĐ)</button>
-                        <button class="switch-btn" id="btnPerfCpl" onclick="setPerfTableMode('cpl')">🎯 CPL vs. Kế Hoạch</button>
-                        <button class="switch-btn" id="btnPerfCr" onclick="setPerfTableMode('cr')">🔄 Tỷ Lệ Chuyển Đổi</button>
-                        <button class="switch-btn" id="btnPerfCpHd" onclick="setPerfTableMode('cphd')">📝 Chi Phí / HĐ</button>
+                        <button class="switch-btn active" id="btnPerfAll" onclick="setPerfTableMode('all')">📊 Tổng Hợp</button>
+                        <button class="switch-btn" id="btnPerfCpl" onclick="setPerfTableMode('cpl')">🎯 CPL vs. KH</button>
+                        <button class="switch-btn" id="btnPerfCr" onclick="setPerfTableMode('cr')">🔄 Tỷ Lệ CĐ</button>
+                        <button class="switch-btn" id="btnPerfCpHd" onclick="setPerfTableMode('cphd')">📝 CP / HĐ</button>
+                        <button class="switch-btn" id="btnPerfDs" onclick="setPerfTableMode('ds')">💵 Doanh Số</button>
                     </div>
                     <div class="switch-group">
                         <button class="switch-btn active" id="btnPerfViewChart" onclick="setPerfView('chart')">📈 Biểu đồ</button>
@@ -722,12 +726,21 @@
                         <div class="canvas-wrap"><canvas id="chartPerfB"></canvas></div>
                     </div>
                 </div>
-                <div class="chart-panel" id="perfPanelC" style="margin-bottom: 1rem;">
-                    <div class="chart-head">
-                        <span id="perfChartCTitle">3. Chi Phí / Hợp Đồng (CP/HĐ) & Số Lượng Hợp Đồng Theo Tháng</span>
-                        <span style="font-size:0.71rem; color:var(--text-muted); font-weight:600;">Cột = CP/HĐ (VNĐ) • Đường = Số lượng HĐ</span>
+                <div class="charts-row" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+                    <div class="chart-panel" id="perfPanelC">
+                        <div class="chart-head">
+                            <span id="perfChartCTitle">3. Chi Phí / Hợp Đồng (CP/HĐ) & Số Lượng Hợp Đồng Theo Tháng</span>
+                            <span style="font-size:0.71rem; color:var(--text-muted); font-weight:600;">Cột = CP/HĐ (VNĐ) • Đường = Số lượng HĐ</span>
+                        </div>
+                        <div class="canvas-wrap"><canvas id="chartPerfC"></canvas></div>
                     </div>
-                    <div class="canvas-wrap" style="height: 280px;"><canvas id="chartPerfC"></canvas></div>
+                    <div class="chart-panel" id="perfPanelD">
+                        <div class="chart-head">
+                            <span id="perfChartDTitle">4. Doanh Số & Tỷ Lệ Chi Phí / Doanh Số (% CP/DS) Theo Tháng</span>
+                            <span style="font-size:0.71rem; color:var(--text-muted); font-weight:600;">Cột = Doanh Số • Đường = % CP/DS</span>
+                        </div>
+                        <div class="canvas-wrap"><canvas id="chartPerfD"></canvas></div>
+                    </div>
                 </div>
             </div>
 
@@ -779,6 +792,7 @@
         let chartPerfAInst = null;
         let chartPerfBInst = null;
         let chartPerfCInst = null;
+        let chartPerfDInst = null;
         let currentSummaryRows = [];
         let currentAllMonths = [];
         let perfTableMode = 'all';
@@ -913,6 +927,7 @@
             document.getElementById('btnChartSpend').classList.toggle('active', m === 'spend');
             document.getElementById('btnChartData').classList.toggle('active', m === 'data');
             document.getElementById('btnChartHD').classList.toggle('active', m === 'hd');
+            document.getElementById('btnChartDS').classList.toggle('active', m === 'ds');
             renderAll();
         }
 
@@ -926,6 +941,7 @@
         function setTrendMode(m) {
             trendMode = m;
             document.getElementById('btnStackProd').classList.toggle('active', m === 'product');
+            document.getElementById('btnStackRevenue').classList.toggle('active', m === 'revenue');
             document.getElementById('btnStackChannel').classList.toggle('active', m === 'channel');
             document.getElementById('btnStackCpl').classList.toggle('active', m === 'cpl');
             renderAll();
@@ -936,6 +952,7 @@
             document.getElementById('btnTblCompare').classList.toggle('active', m === 'compare');
             document.getElementById('btnTblCplMatrix').classList.toggle('active', m === 'cpl_matrix');
             document.getElementById('btnTblMatrix').classList.toggle('active', m === 'matrix');
+            document.getElementById('btnTblDsMatrix').classList.toggle('active', m === 'ds_matrix');
             renderAll();
         }
 
@@ -945,6 +962,7 @@
             document.getElementById('btnPerfCpl').classList.toggle('active', m === 'cpl');
             document.getElementById('btnPerfCr').classList.toggle('active', m === 'cr');
             document.getElementById('btnPerfCpHd').classList.toggle('active', m === 'cphd');
+            document.getElementById('btnPerfDs').classList.toggle('active', m === 'ds');
             renderAll();
         }
 
@@ -1159,6 +1177,10 @@
             const isOver = planVal > 0 && compareCPL > planVal;
             const yCostPerHD = yHD > 0 ? Math.round(ySpend / yHD) : 0;
             const cCostPerHD = cHD > 0 ? Math.round(cSpend / cHD) : 0;
+            const yDS = rows.reduce((s, r) => s + r.yearDS, 0);
+            const pDS = rows.reduce((s, r) => s + r.mp.ds, 0);
+            const cDS = rows.reduce((s, r) => s + r.mc.ds, 0);
+            const yCpDsPct = yDS > 0 ? (ySpend / yDS * 100) : 0;
 
             const scope = selProd === 'ALL' ? `Tất cả sản phẩm` : selProd;
             document.getElementById('sec1Title').textContent = `Tổng Chi Tiêu Năm ${year} (${scope}) • So Sánh ${prevM} ➔ ${currM} & Định Mức CPL`;
@@ -1221,6 +1243,15 @@
                         <span>${currM}: <b>${cHD} HĐ (${cCostPerHD > 0 ? fmtShort(cCostPerHD) : '--'})</b></span>
                     </div>
                 </div>
+
+                <div class="kpi-box" style="--accent: #ec4899;">
+                    <div class="kpi-name"><span>💵 Doanh Số & CP/DS</span> <span>${yCpDsPct > 0 ? 'CP/DS: ' + yCpDsPct.toFixed(1) + '%' : 'Năm ' + year}</span></div>
+                    <div class="kpi-num" style="color:#f472b6;">${fmtVND(yDS)}</div>
+                    <div class="kpi-foot">
+                        <span>${prevM}: <b>${pDS > 0 ? fmtShort(pDS) : '--'}</b></span>
+                        <span>${currM}: <b style="color:#34d399;">${cDS > 0 ? fmtShort(cDS) : '--'}</b></span>
+                    </div>
+                </div>
             `;
         }
 
@@ -1279,6 +1310,17 @@
                     pointRadius: 4,
                     yAxisID: 'yCount'
                 });
+            } else if (chartMetric === 'ds') {
+                datasetsA.push({
+                    label: `Doanh số (${currM})`,
+                    data: activeCompare.map(r => r.mc.ds),
+                    type: 'line',
+                    borderColor: '#f472b6',
+                    backgroundColor: '#f472b6',
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    yAxisID: 'yCount'
+                });
             }
 
             const ctxA = document.getElementById('chartMonthCompare').getContext('2d');
@@ -1296,7 +1338,7 @@
                         legend: { position: 'top', labels: { color: colors.text, boxWidth: 12, font: { size: 11, weight: 600 } } },
                         tooltip: {
                             callbacks: {
-                                label: (ctx) => ctx.dataset.yAxisID === 'yCount'
+                                label: (ctx) => (ctx.dataset.yAxisID === 'yCount' && chartMetric !== 'ds')
                                     ? `${ctx.dataset.label}: ${fmtNum(ctx.raw)}`
                                     : `${ctx.dataset.label}: ${fmtVND(ctx.raw)}`
                             }
@@ -1313,7 +1355,11 @@
                             yCount: {
                                 position: 'right',
                                 grid: { drawOnChartArea: false },
-                                ticks: { color: '#f59e0b', precision: 0 }
+                                ticks: {
+                                    color: chartMetric === 'ds' ? '#f472b6' : '#f59e0b',
+                                    precision: 0,
+                                    callback: v => chartMetric === 'ds' ? fmtShort(v) : v
+                                }
                             }
                         } : {})
                     }
@@ -1446,6 +1492,14 @@
                         borderRadius: 4
                     }
                 ];
+            } else if (trendMode === 'revenue') {
+                document.getElementById('trendChartTitle').textContent = `3. Doanh Số Các Sản Phẩm Qua Các Tháng Năm ${year} (${selProd === 'ALL' ? 'Tất cả SP' : selProd})`;
+                datasetsC = targetList.map((r, i) => ({
+                    label: r.name,
+                    data: allMonths.map(m => (r.months[m] && r.months[m].ds) || 0),
+                    backgroundColor: PALETTE[i % PALETTE.length],
+                    borderRadius: 4
+                }));
             } else {
                 document.getElementById('trendChartTitle').textContent = `3. Chi Tiêu Các Sản Phẩm Qua Các Tháng Năm ${year} (${selProd === 'ALL' ? 'Tất cả SP' : selProd})`;
                 datasetsC = targetList.map((r, i) => ({
@@ -1578,6 +1632,55 @@
                 return;
             }
 
+            // 2b. Mode: Ma trận Doanh số 11 tháng
+            if (tableMode === 'ds_matrix') {
+                document.getElementById('tableModeTitle').textContent = `4. Ma Trận Doanh Số Sản Phẩm Qua Các Tháng Năm ${year}`;
+                thead.innerHTML = `
+                    <tr>
+                        <th>Sản Phẩm</th>
+                        ${allMonths.map(m => `<th style="text-align:right;">T${m.split('-')[1]}/${m.split('-')[0].slice(2)}</th>`).join('')}
+                        <th style="text-align:right;">Tổng DS ${year}</th>
+                        <th style="text-align:right;">% DS</th>
+                        <th style="text-align:right;">% CP/DS</th>
+                    </tr>
+                `;
+
+                const totAllDS = rows.reduce((s, r) => s + r.yearDS, 0);
+                const totAllSpend = rows.reduce((s, r) => s + r.yearSpend, 0);
+                const bodyHtml = rows.map(r => {
+                    const shareDS = totAllDS > 0 ? (r.yearDS / totAllDS * 100) : 0;
+                    const cpDs = r.yearDS > 0 ? (r.yearSpend / r.yearDS * 100) : 0;
+                    return `
+                        <tr class="${selProd === r.name ? 'active-row' : ''}" onclick="selectProduct('${r.name}')" style="cursor:pointer;">
+                            <td><b>📦 ${r.name}</b></td>
+                            ${allMonths.map(m => {
+                                const ds = (r.months[m] && r.months[m].ds) || 0;
+                                return `<td style="text-align:right; color:${ds > 0 ? '#f472b6' : 'var(--text-muted)'}; font-weight:${ds > 0 ? '700' : '400'};">${ds > 0 ? fmtShort(ds) : '--'}</td>`;
+                            }).join('')}
+                            <td style="text-align:right;"><b style="color:#f472b6;">${fmtVND(r.yearDS)}</b></td>
+                            <td style="text-align:right;"><b>${shareDS.toFixed(1)}%</b></td>
+                            <td style="text-align:right;"><b>${cpDs > 0 ? cpDs.toFixed(1) + '%' : '--'}</b></td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const totCpDs = totAllDS > 0 ? (totAllSpend / totAllDS * 100).toFixed(1) + '%' : '--';
+                const totRow = `
+                    <tr class="total-row">
+                        <td>TỔNG CỘNG</td>
+                        ${allMonths.map(m => {
+                            const mSum = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].ds) || 0), 0);
+                            return `<td style="text-align:right;">${mSum > 0 ? fmtShort(mSum) : '--'}</td>`;
+                        }).join('')}
+                        <td style="text-align:right;">${fmtVND(totAllDS)}</td>
+                        <td style="text-align:right;">100%</td>
+                        <td style="text-align:right;">${totCpDs}</td>
+                    </tr>
+                `;
+                tbody.innerHTML = bodyHtml + totRow;
+                return;
+            }
+
             // 3. Mode: Compare 2 Months + CPL Plan vs Actual
             document.getElementById('tableModeTitle').textContent = `4. Bảng Ngân Sách Sản Phẩm Năm ${year}, So Sánh ${prevM} ➔ ${currM} & Cảnh Báo CPL Kế Hoạch`;
             thead.innerHTML = `
@@ -1686,29 +1789,43 @@
             const pA = document.getElementById('perfPanelA');
             const pB = document.getElementById('perfPanelB');
             const pC = document.getElementById('perfPanelC');
+            const pD = document.getElementById('perfPanelD');
             const rowTop = pA.parentElement;
+            const rowBot = pC.parentElement;
 
             if (perfTableMode === 'all') {
                 rowTop.style.display = 'grid';
                 rowTop.style.gridTemplateColumns = '1fr 1fr';
+                rowBot.style.display = 'grid';
+                rowBot.style.gridTemplateColumns = '1fr 1fr';
                 pA.style.display = 'block';
                 pB.style.display = 'block';
                 pC.style.display = 'block';
+                pD.style.display = 'block';
             } else if (perfTableMode === 'cpl') {
                 rowTop.style.display = 'grid';
                 rowTop.style.gridTemplateColumns = '1fr';
+                rowBot.style.display = 'none';
                 pA.style.display = 'block';
                 pB.style.display = 'none';
-                pC.style.display = 'none';
             } else if (perfTableMode === 'cr') {
                 rowTop.style.display = 'grid';
                 rowTop.style.gridTemplateColumns = '1fr';
+                rowBot.style.display = 'none';
                 pA.style.display = 'none';
                 pB.style.display = 'block';
-                pC.style.display = 'none';
             } else if (perfTableMode === 'cphd') {
                 rowTop.style.display = 'none';
+                rowBot.style.display = 'grid';
+                rowBot.style.gridTemplateColumns = '1fr';
                 pC.style.display = 'block';
+                pD.style.display = 'none';
+            } else if (perfTableMode === 'ds') {
+                rowTop.style.display = 'none';
+                rowBot.style.display = 'grid';
+                rowBot.style.gridTemplateColumns = '1fr';
+                pC.style.display = 'none';
+                pD.style.display = 'block';
             }
 
             // 1. Biểu đồ 3A: CPL Thực Tế vs. CPL Kế Hoạch Theo Tháng
@@ -1917,6 +2034,75 @@
                     }
                 }
             });
+
+            // 4. Biểu đồ 3D: Doanh Số & % Chi Phí / Doanh Số Theo Tháng
+            document.getElementById('perfChartDTitle').textContent = `4. Doanh Số & % Chi Phí / Doanh Số Theo Tháng (${scopeLbl})`;
+            const mDsVals = allMonths.map(m => rows.reduce((s, r) => s + ((r.months[m] && r.months[m].ds) || 0), 0));
+            const mCpDsPcts = allMonths.map((m, idx) => {
+                const sp = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].spend) || 0), 0);
+                const ds = mDsVals[idx];
+                return ds > 0 ? +(sp / ds * 100).toFixed(1) : 0;
+            });
+
+            const ctxPD = document.getElementById('chartPerfD').getContext('2d');
+            if (chartPerfDInst) chartPerfDInst.destroy();
+            chartPerfDInst = new Chart(ctxPD, {
+                type: 'bar',
+                data: {
+                    labels: mLabels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Doanh Số (VNĐ)',
+                            data: mDsVals,
+                            backgroundColor: 'rgba(236, 72, 153, 0.78)',
+                            borderRadius: 6,
+                            yAxisID: 'yDs',
+                            order: 2
+                        },
+                        {
+                            type: 'line',
+                            label: '% CP / Doanh Số',
+                            data: mCpDsPcts,
+                            borderColor: '#34d399',
+                            backgroundColor: '#34d399',
+                            borderWidth: 2.5,
+                            pointRadius: 4.5,
+                            tension: 0.25,
+                            yAxisID: 'yCpDs',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { color: colors.text, boxWidth: 11, font: { size: 11, weight: 600 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ctx.dataset.yAxisID === 'yCpDs'
+                                    ? `${ctx.dataset.label}: ${ctx.raw}%`
+                                    : `${ctx.dataset.label}: ${fmtVND(ctx.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: colors.grid }, ticks: { color: colors.text, font: { weight: 600 } } },
+                        yDs: {
+                            position: 'left',
+                            grid: { color: colors.grid },
+                            ticks: { color: '#f472b6', callback: v => fmtShort(v) }
+                        },
+                        yCpDs: {
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#34d399', callback: v => v + '%' }
+                        }
+                    }
+                }
+            });
         }
 
         function renderPerfTable(summaryRows, allMonths, selProd, year) {
@@ -1942,6 +2128,7 @@
                     const yDmRate = r.yearMess > 0 ? (r.yearData / r.yearMess * 100).toFixed(1) : '--';
                     const yHdRate = r.yearData > 0 ? (r.yearHD / r.yearData * 100).toFixed(1) : '--';
                     const yCpHd = r.yearHD > 0 ? fmtShort(r.yearSpend / r.yearHD) : '--';
+                    const yCpDs = r.yearDS > 0 ? (r.yearSpend / r.yearDS * 100).toFixed(1) + '%' : '--';
                     const yCplColor = r.planCPL > 0 && r.avgYearCPL > 0 ? (r.isOverPlanAvg ? '#f87171' : '#34d399') : 'var(--text-primary)';
 
                     const avgCell = `
@@ -1949,12 +2136,13 @@
                             <div>CPL: <b style="color:${yCplColor};">${r.avgYearCPL > 0 ? fmtShort(r.avgYearCPL) : '--'}</b></div>
                             <div style="color:var(--text-secondary);">D/M: <b>${yDmRate}%</b> • HĐ/D: <b>${yHdRate}%</b></div>
                             <div style="color:#22d3ee;">CP/HĐ: <b>${yCpHd}</b> (${r.yearHD} HĐ)</div>
+                            <div style="color:#f472b6;">DS: <b>${r.yearDS > 0 ? fmtShort(r.yearDS) : '--'}</b> (${yCpDs})</div>
                         </td>
                     `;
 
                     const mCells = allMonths.map(m => {
                         const mo = r.months[m];
-                        if (!mo || (mo.spend === 0 && mo.data === 0 && mo.hd === 0)) {
+                        if (!mo || (mo.spend === 0 && mo.data === 0 && mo.hd === 0 && mo.ds === 0)) {
                             return `<td style="text-align:right; color:var(--text-muted);">--</td>`;
                         }
                         const isOverM = r.planCPL > 0 && mo.cpl > r.planCPL;
@@ -1967,6 +2155,7 @@
                                 <div><b style="color:${cplColor};">${mo.cpl > 0 ? fmtShort(mo.cpl) : '--'}</b>${isOverM ? ' 🚨' : ''}</div>
                                 <div style="color:var(--text-secondary);">${dmRate} • ${hdRate}</div>
                                 <div style="color:#22d3ee;">${cpHd}${mo.hd > 0 ? ` (${mo.hd})` : ''}</div>
+                                <div style="color:#f472b6;">${mo.ds > 0 ? fmtShort(mo.ds) : '--'}</div>
                             </td>
                         `;
                     }).join('');
@@ -2070,54 +2259,107 @@
             }
 
             // Mode 4: Chi phí / Hợp đồng (CP/HĐ) qua các tháng
-            document.getElementById('sec3Title').textContent = `Bảng Chi Phí / Hợp Đồng (CP/HĐ) & Số Lượng HĐ Theo Tháng (${year})`;
+            if (perfTableMode === 'cphd') {
+                document.getElementById('sec3Title').textContent = `Bảng Chi Phí / Hợp Đồng (CP/HĐ) & Số Lượng HĐ Theo Tháng (${year})`;
+                thead.innerHTML = `
+                    <tr>
+                        <th>Sản Phẩm</th>
+                        <th style="text-align:right;">Tổng HĐ ${year}</th>
+                        <th style="text-align:right;">CP/HĐ Năm ${year}</th>
+                        ${monthHeaders}
+                    </tr>
+                `;
+                const cpHdBody = rows.map(r => {
+                    const yCpHd = r.yearHD > 0 ? fmtShort(r.yearSpend / r.yearHD) : '--';
+                    const mCells = allMonths.map(m => {
+                        const mo = r.months[m];
+                        if (!mo || mo.spend === 0) return `<td style="text-align:right; color:var(--text-muted);">--</td>`;
+                        if (mo.hd === 0) return `<td style="text-align:right; color:#f87171; font-size:0.72rem;">0 HĐ<div style="font-size:0.67rem; opacity:0.8;">(${fmtShort(mo.spend)})</div></td>`;
+                        const cpHd = fmtShort(mo.spend / mo.hd);
+                        return `
+                            <td style="text-align:right; line-height:1.4; font-size:0.73rem;">
+                                <div style="color:#22d3ee;"><b>${cpHd}</b></div>
+                                <div style="color:var(--text-secondary); font-size:0.68rem;">${mo.hd} HĐ</div>
+                            </td>
+                        `;
+                    }).join('');
+                    return `
+                        <tr class="${selProd === r.name ? 'active-row' : ''}" onclick="selectProduct('${r.name}')" style="cursor:pointer;">
+                            <td><b>📦 ${r.name}</b></td>
+                            <td style="text-align:right;"><b>${fmtNum(r.yearHD)} HĐ</b></td>
+                            <td style="text-align:right; color:#22d3ee;"><b>${yCpHd}</b></td>
+                            ${mCells}
+                        </tr>
+                    `;
+                }).join('');
+
+                const totAllSpend = rows.reduce((s, r) => s + r.yearSpend, 0);
+                const totAllHD = rows.reduce((s, r) => s + r.yearHD, 0);
+                const totRowCpHd = `
+                    <tr class="total-row">
+                        <td>TỔNG CỘNG</td>
+                        <td style="text-align:right;">${fmtNum(totAllHD)} HĐ</td>
+                        <td style="text-align:right;">${totAllHD > 0 ? fmtShort(totAllSpend / totAllHD) : '--'}</td>
+                        ${allMonths.map(m => {
+                            const mSp = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].spend) || 0), 0);
+                            const mHd = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].hd) || 0), 0);
+                            return `<td style="text-align:right;">${mHd > 0 ? fmtShort(mSp / mHd) + ` (${mHd})` : (mSp > 0 ? '0 HĐ' : '--')}</td>`;
+                        }).join('')}
+                    </tr>
+                `;
+                tbody.innerHTML = cpHdBody + totRowCpHd;
+                return;
+            }
+
+            // Mode 5: Doanh Số & % CP/DS qua các tháng
+            document.getElementById('sec3Title').textContent = `Bảng Doanh Số & Tỷ Lệ Chi Phí / Doanh Số (% CP/DS) Theo Tháng (${year})`;
             thead.innerHTML = `
                 <tr>
                     <th>Sản Phẩm</th>
-                    <th style="text-align:right;">Tổng HĐ ${year}</th>
-                    <th style="text-align:right;">CP/HĐ Năm ${year}</th>
+                    <th style="text-align:right;">Tổng DS ${year}</th>
+                    <th style="text-align:right;">% CP/DS Năm</th>
                     ${monthHeaders}
                 </tr>
             `;
-            const cpHdBody = rows.map(r => {
-                const yCpHd = r.yearHD > 0 ? fmtShort(r.yearSpend / r.yearHD) : '--';
+            const dsBody = rows.map(r => {
+                const yCpDs = r.yearDS > 0 ? (r.yearSpend / r.yearDS * 100).toFixed(1) + '%' : '--';
                 const mCells = allMonths.map(m => {
                     const mo = r.months[m];
-                    if (!mo || mo.spend === 0) return `<td style="text-align:right; color:var(--text-muted);">--</td>`;
-                    if (mo.hd === 0) return `<td style="text-align:right; color:#f87171; font-size:0.72rem;">0 HĐ<div style="font-size:0.67rem; opacity:0.8;">(${fmtShort(mo.spend)})</div></td>`;
-                    const cpHd = fmtShort(mo.spend / mo.hd);
+                    if (!mo || (mo.ds === 0 && mo.spend === 0)) return `<td style="text-align:right; color:var(--text-muted);">--</td>`;
+                    if (mo.ds === 0) return `<td style="text-align:right; color:var(--text-muted); font-size:0.72rem;">--</td>`;
+                    const cpDs = (mo.spend / mo.ds * 100).toFixed(1) + '%';
                     return `
                         <td style="text-align:right; line-height:1.4; font-size:0.73rem;">
-                            <div style="color:#22d3ee;"><b>${cpHd}</b></div>
-                            <div style="color:var(--text-secondary); font-size:0.68rem;">${mo.hd} HĐ</div>
+                            <div style="color:#f472b6;"><b>${fmtShort(mo.ds)}</b></div>
+                            <div style="color:#34d399; font-size:0.68rem;">${cpDs}</div>
                         </td>
                     `;
                 }).join('');
                 return `
                     <tr class="${selProd === r.name ? 'active-row' : ''}" onclick="selectProduct('${r.name}')" style="cursor:pointer;">
                         <td><b>📦 ${r.name}</b></td>
-                        <td style="text-align:right;"><b>${fmtNum(r.yearHD)} HĐ</b></td>
-                        <td style="text-align:right; color:#22d3ee;"><b>${yCpHd}</b></td>
+                        <td style="text-align:right; color:#f472b6;"><b>${fmtVND(r.yearDS)}</b></td>
+                        <td style="text-align:right; color:#34d399;"><b>${yCpDs}</b></td>
                         ${mCells}
                     </tr>
                 `;
             }).join('');
 
-            const totAllSpend = rows.reduce((s, r) => s + r.yearSpend, 0);
-            const totAllHD = rows.reduce((s, r) => s + r.yearHD, 0);
-            const totRowCpHd = `
+            const totAllSpendDs = rows.reduce((s, r) => s + r.yearSpend, 0);
+            const totAllDS = rows.reduce((s, r) => s + r.yearDS, 0);
+            const totRowDs = `
                 <tr class="total-row">
                     <td>TỔNG CỘNG</td>
-                    <td style="text-align:right;">${fmtNum(totAllHD)} HĐ</td>
-                    <td style="text-align:right;">${totAllHD > 0 ? fmtShort(totAllSpend / totAllHD) : '--'}</td>
+                    <td style="text-align:right;">${fmtVND(totAllDS)}</td>
+                    <td style="text-align:right;">${totAllDS > 0 ? (totAllSpendDs / totAllDS * 100).toFixed(1) + '%' : '--'}</td>
                     ${allMonths.map(m => {
                         const mSp = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].spend) || 0), 0);
-                        const mHd = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].hd) || 0), 0);
-                        return `<td style="text-align:right;">${mHd > 0 ? fmtShort(mSp / mHd) + ` (${mHd})` : (mSp > 0 ? '0 HĐ' : '--')}</td>`;
+                        const mDs = rows.reduce((s, r) => s + ((r.months[m] && r.months[m].ds) || 0), 0);
+                        return `<td style="text-align:right;">${mDs > 0 ? fmtShort(mDs) + ` (${(mSp/mDs*100).toFixed(0)}%)` : '--'}</td>`;
                     }).join('')}
                 </tr>
             `;
-            tbody.innerHTML = cpHdBody + totRowCpHd;
+            tbody.innerHTML = dsBody + totRowDs;
         }
 
         function exportPerfCSV() {
@@ -2134,6 +2376,8 @@
                         "SL Mess": mo.mess,
                         "SL Data": mo.data,
                         "Tổng HĐ": mo.hd,
+                        "Doanh số": Math.round(mo.ds),
+                        "% CP/DS": mo.ds > 0 ? +(mo.spend / mo.ds * 100).toFixed(2) : 0,
                         "CPL Thực tế": mo.cpl,
                         "CPL Kế hoạch": r.planCPL || "",
                         "Tỷ lệ Data/Mess (%)": mo.mess > 0 ? +(mo.data / mo.mess * 100).toFixed(2) : 0,
@@ -2196,6 +2440,10 @@
                 [`HĐ ${currM}`]: r.mc.hd,
                 "Tổng HĐ Năm": r.yearHD,
                 "CP/HĐ Năm": r.yearHD > 0 ? Math.round(r.yearSpend / r.yearHD) : 0,
+                [`Doanh số ${prevM}`]: Math.round(r.mp.ds),
+                [`Doanh số ${currM}`]: Math.round(r.mc.ds),
+                "Tổng Doanh Số Năm": Math.round(r.yearDS),
+                "% CP/DS Năm": r.yearDS > 0 ? +(r.yearSpend / r.yearDS * 100).toFixed(2) : 0,
                 "CPL Kế Hoạch": r.planCPL || "",
                 "CPL TB Năm": r.avgYearCPL || "",
                 [`CPL ${prevM}`]: r.cplPrev || "",
