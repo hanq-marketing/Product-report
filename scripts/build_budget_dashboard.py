@@ -816,6 +816,7 @@ html_content = """<!DOCTYPE html>
             "Data Analyst": 170000,
             "Data Engineer": 200000,
             "Embedded": 180000,
+            "BrSe": 250000,
             "BrSE": 250000,
             "AI Engineer": 200000,
             "Cyber Security": 250000,
@@ -860,6 +861,7 @@ html_content = """<!DOCTYPE html>
         function normalizeProd(raw) {
             const p = String(raw || "").trim();
             if (p === "Network Security") return "Cyber Security";
+            if (["brse", "brse nonit", "brse non-it", "brse_nonit"].includes(p.toLowerCase())) return "BrSe";
             return p || "Khác";
         }
 
