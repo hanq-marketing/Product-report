@@ -30,6 +30,7 @@ CPL_PLAN_MAP = {
     "Data Analyst": 170000,
     "Data Engineer": 200000,
     "Embedded": 180000,
+    "BrSe": 250000,
     "BrSE": 250000,
     "AI Engineer": 200000,
     "Cyber Security": 250000,
@@ -142,13 +143,17 @@ def parse_month_str(thang_raw):
 
 def map_product_tag(raw_prod):
     p = str(raw_prod or "").strip()
+    if p.lower() in {"brse", "brse nonit", "brse non-it", "brse_nonit"}:
+        return ("BrSe", "Nhật Bản & BrSE")
     tag_map = {
         "Data Analyst": ("Data Analyst", "Data & Analytics"),
         "PTDL - Power BI": ("PTDL - Power BI", "Data & Analytics"),
         "Data Engineer": ("Data Engineer", "Data & Analytics"),
         "Embedded": ("Embedded", "Kỹ thuật & Nhúng"),
         "BA": ("BA", "Business Analyst"),
-        "BrSE": ("BrSE", "Nhật Bản & BrSE"),
+        "BrSE": ("BrSe", "Nhật Bản & BrSE"),
+        "BrSe": ("BrSe", "Nhật Bản & BrSE"),
+        "BrSE NonIT": ("BrSe", "Nhật Bản & BrSE"),
         "IT Tsubasa": ("IT Tsubasa", "Nhật Bản & BrSE"),
         "IT Tsubasa Plus": ("IT Tsubasa Plus", "Nhật Bản & BrSE"),
         "Gambaru": ("Gambaru", "Nhật Bản & BrSE"),
@@ -209,7 +214,7 @@ def clean_and_tag_records(raw_records, embedded_records):
 
     print(f"-> Đã xóa {removed_old_embedded} dòng Embedded cũ và thay thế bằng {len(embedded_records)} dòng Embedded mới nhất từ Lark Base.")
 
-    cleaned = []
+    grouped = {}
 
     for r in combined_records:
         flds = dict(r.get("fields") or {})
@@ -271,12 +276,93 @@ def clean_and_tag_records(raw_records, embedded_records):
             continue
 
         tag_sp, nhom_sp = map_product_tag(prod_origin)
+        rec_id = r.get("record_id") or r.get("id") or ""
+        gkey = (ym_code, tag_sp)
 
-        raw_cpl_tong = round(num_val(flds.get("CPL TỔNG")))
-        cpl_tong = raw_cpl_tong if raw_cpl_tong > 0 else (round(tong_cp_sau_thue / sl_data_tong) if sl_data_tong > 0 else 0)
-        cpl_fb_mess = round(num_val(flds.get("CPL FB Mess"))) or (round(cp_fb_mess_sau_thue / sl_data_fb_mess) if sl_data_fb_mess > 0 else 0)
-        cpl_fb_ldp = round(num_val(flds.get("CPL Landing"))) or (round(cp_fb_ldp_sau_thue / sl_data_fb_ldp) if sl_data_fb_ldp > 0 else 0)
-        data_per_mess_pct = round(num_val(flds.get("DATA/MESS")) * 100, 1) if num_val(flds.get("DATA/MESS")) > 0 else (round(sl_data_fb_mess / sl_mess * 100, 1) if sl_mess > 0 else 0.0)
+        if gkey not in grouped:
+            grouped[gkey] = {
+                "Mã Tháng": ym_code,
+                "Năm": year_num,
+                "Tháng Số": month_num,
+                "Tháng": month_label,
+                "Tag Sản Phẩm": tag_sp,
+                "Nhóm Sản Phẩm": nhom_sp,
+                "_origins": [],
+                "_rec_ids": [],
+                "_count": 0,
+                "Tổng Chi Phí Ads (Sau Thuế)": 0,
+                "Chi Phí FB Mess (Sau Thuế)": 0,
+                "Chi Phí FB Landing (Sau Thuế)": 0,
+                "Chi Phí TikTok (Sau Thuế)": 0,
+                "Chi Phí FB Mess (Trước Thuế)": 0,
+                "Chi Phí FB Landing (Trước Thuế)": 0,
+                "Chi Phí TikTok (Trước Thuế)": 0,
+                "SL Mess": 0,
+                "SL Data Tổng": 0,
+                "SL Data FB Mess": 0,
+                "SL Data FB Landing": 0,
+                "SL Data TikTok": 0,
+                "HĐ Ký Trong Tháng": 0,
+                "Tổng HĐ": 0,
+                "HĐ Hết Vòng": 0,
+                "Doanh Số Trong Tháng": 0,
+                "Doanh Số Tổng": 0,
+                "_raw_cpl_tong": round(num_val(flds.get("CPL TỔNG"))),
+                "_raw_cpl_fb_mess": round(num_val(flds.get("CPL FB Mess"))),
+                "_raw_cpl_fb_ldp": round(num_val(flds.get("CPL Landing"))),
+                "_raw_data_per_mess": num_val(flds.get("DATA/MESS")),
+                "_raw_cp_per_mess": round(num_val(flds.get("CP/MESS"))),
+                "_raw_cp_per_hd": round(num_val(flds.get("CP/HĐ - hết vòng"))),
+                "_raw_cp_ds": num_val(flds.get("CP/DS TỔNG")),
+            }
+
+        g = grouped[gkey]
+        g["_count"] += 1
+        if prod_origin not in g["_origins"]:
+            g["_origins"].append(prod_origin)
+        if rec_id and rec_id not in g["_rec_ids"]:
+            g["_rec_ids"].append(rec_id)
+        g["Tổng Chi Phí Ads (Sau Thuế)"] += tong_cp_sau_thue
+        g["Chi Phí FB Mess (Sau Thuế)"] += cp_fb_mess_sau_thue
+        g["Chi Phí FB Landing (Sau Thuế)"] += cp_fb_ldp_sau_thue
+        g["Chi Phí TikTok (Sau Thuế)"] += cp_tiktok_sau_thue
+        g["Chi Phí FB Mess (Trước Thuế)"] += cp_fb_mess
+        g["Chi Phí FB Landing (Trước Thuế)"] += cp_fb_ldp
+        g["Chi Phí TikTok (Trước Thuế)"] += cp_tiktok
+        g["SL Mess"] += sl_mess
+        g["SL Data Tổng"] += sl_data_tong
+        g["SL Data FB Mess"] += sl_data_fb_mess
+        g["SL Data FB Landing"] += sl_data_fb_ldp
+        g["SL Data TikTok"] += sl_data_tiktok
+        g["HĐ Ký Trong Tháng"] += hd_trong_thang
+        g["Tổng HĐ"] += tong_hd
+        g["HĐ Hết Vòng"] += hd_het_vong
+        g["Doanh Số Trong Tháng"] += ds_trong_thang
+        g["Doanh Số Tổng"] += ds_tong
+
+    cleaned = []
+    for g in grouped.values():
+        tag_sp = g["Tag Sản Phẩm"]
+        prod_origin = " + ".join(g["_origins"])
+        tong_cp_sau_thue = g["Tổng Chi Phí Ads (Sau Thuế)"]
+        cp_fb_mess_sau_thue = g["Chi Phí FB Mess (Sau Thuế)"]
+        cp_fb_ldp_sau_thue = g["Chi Phí FB Landing (Sau Thuế)"]
+        sl_mess = g["SL Mess"]
+        sl_data_tong = g["SL Data Tổng"]
+        sl_data_fb_mess = g["SL Data FB Mess"]
+        sl_data_fb_ldp = g["SL Data FB Landing"]
+        hd_het_vong = g["HĐ Hết Vòng"]
+        ds_tong = g["Doanh Số Tổng"]
+
+        is_single = g["_count"] == 1
+        cpl_tong = (g["_raw_cpl_tong"] if (is_single and g["_raw_cpl_tong"] > 0) else (round(tong_cp_sau_thue / sl_data_tong) if sl_data_tong > 0 else 0))
+        cpl_fb_mess = (g["_raw_cpl_fb_mess"] if (is_single and g["_raw_cpl_fb_mess"] > 0) else (round(cp_fb_mess_sau_thue / sl_data_fb_mess) if sl_data_fb_mess > 0 else 0))
+        cpl_fb_ldp = (g["_raw_cpl_fb_ldp"] if (is_single and g["_raw_cpl_fb_ldp"] > 0) else (round(cp_fb_ldp_sau_thue / sl_data_fb_ldp) if sl_data_fb_ldp > 0 else 0))
+        data_per_mess_pct = (
+            round(g["_raw_data_per_mess"] * 100, 1)
+            if (is_single and g["_raw_data_per_mess"] > 0)
+            else (round(sl_data_fb_mess / sl_mess * 100, 1) if sl_mess > 0 else 0.0)
+        )
 
         cpl_plan = CPL_PLAN_MAP.get(tag_sp) or CPL_PLAN_MAP.get(prod_origin) or 0
         cpl_diff = (cpl_tong - cpl_plan) if (cpl_tong > 0 and cpl_plan > 0) else 0
@@ -292,30 +378,30 @@ def clean_and_tag_records(raw_records, embedded_records):
         else:
             cpl_alert = "--"
 
-        cp_per_mess = round(cp_fb_mess_sau_thue / sl_mess) if sl_mess > 0 else round(num_val(flds.get("CP/MESS")))
-        cp_per_hd = round(num_val(flds.get("CP/HĐ - hết vòng"))) or (round(tong_cp_sau_thue / hd_het_vong) if hd_het_vong > 0 else 0)
-        cp_ds_pct = round((tong_cp_sau_thue / ds_tong) * 100, 2) if ds_tong > 0 else round(num_val(flds.get("CP/DS TỔNG")) * 100, 2)
+        cp_per_mess = round(cp_fb_mess_sau_thue / sl_mess) if sl_mess > 0 else (g["_raw_cp_per_mess"] if is_single else 0)
+        cp_per_hd = (g["_raw_cp_per_hd"] if (is_single and g["_raw_cp_per_hd"] > 0) else (round(tong_cp_sau_thue / hd_het_vong) if hd_het_vong > 0 else 0))
+        cp_ds_pct = round((tong_cp_sau_thue / ds_tong) * 100, 2) if ds_tong > 0 else (round(g["_raw_cp_ds"] * 100, 2) if is_single else 0.0)
 
         cleaned.append({
-            "Mã Tháng": ym_code,
-            "Năm": year_num,
-            "Tháng Số": month_num,
-            "Tháng": month_label,
+            "Mã Tháng": g["Mã Tháng"],
+            "Năm": g["Năm"],
+            "Tháng Số": g["Tháng Số"],
+            "Tháng": g["Tháng"],
             "Tag Sản Phẩm": tag_sp,
-            "Nhóm Sản Phẩm": nhom_sp,
+            "Nhóm Sản Phẩm": g["Nhóm Sản Phẩm"],
             "Sản Phẩm Gốc": prod_origin,
             "Tổng Chi Phí Ads (Sau Thuế)": tong_cp_sau_thue,
             "Chi Phí FB Mess (Sau Thuế)": cp_fb_mess_sau_thue,
             "Chi Phí FB Landing (Sau Thuế)": cp_fb_ldp_sau_thue,
-            "Chi Phí TikTok (Sau Thuế)": cp_tiktok_sau_thue,
-            "Chi Phí FB Mess (Trước Thuế)": cp_fb_mess,
-            "Chi Phí FB Landing (Trước Thuế)": cp_fb_ldp,
-            "Chi Phí TikTok (Trước Thuế)": cp_tiktok,
+            "Chi Phí TikTok (Sau Thuế)": g["Chi Phí TikTok (Sau Thuế)"],
+            "Chi Phí FB Mess (Trước Thuế)": g["Chi Phí FB Mess (Trước Thuế)"],
+            "Chi Phí FB Landing (Trước Thuế)": g["Chi Phí FB Landing (Trước Thuế)"],
+            "Chi Phí TikTok (Trước Thuế)": g["Chi Phí TikTok (Trước Thuế)"],
             "SL Mess": sl_mess,
             "SL Data Tổng": sl_data_tong,
             "SL Data FB Mess": sl_data_fb_mess,
             "SL Data FB Landing": sl_data_fb_ldp,
-            "SL Data TikTok": sl_data_tiktok,
+            "SL Data TikTok": g["SL Data TikTok"],
             "Tỷ Lệ Data/Mess (%)": data_per_mess_pct,
             "CPL Tổng": cpl_tong,
             "CPL FB Mess": cpl_fb_mess,
@@ -325,14 +411,14 @@ def clean_and_tag_records(raw_records, embedded_records):
             "% Vượt/Đạt CPL KH": cpl_diff_pct,
             "Cảnh Báo CPL": cpl_alert,
             "CP/Mess": cp_per_mess,
-            "HĐ Ký Trong Tháng": hd_trong_thang,
-            "Tổng HĐ": tong_hd,
+            "HĐ Ký Trong Tháng": g["HĐ Ký Trong Tháng"],
+            "Tổng HĐ": g["Tổng HĐ"],
             "HĐ Hết Vòng": hd_het_vong,
             "CP/HĐ Hết Vòng": cp_per_hd,
-            "Doanh Số Trong Tháng": ds_trong_thang,
+            "Doanh Số Trong Tháng": g["Doanh Số Trong Tháng"],
             "Doanh Số Tổng": ds_tong,
             "CP/DS Tổng (%)": cp_ds_pct,
-            "Record ID": r.get("record_id") or r.get("id") or "",
+            "Record ID": ", ".join(g["_rec_ids"]),
         })
 
     cleaned.sort(key=lambda x: (x["Mã Tháng"], -x["Tổng Chi Phí Ads (Sau Thuế)"]))
