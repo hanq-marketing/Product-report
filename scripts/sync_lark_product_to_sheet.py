@@ -15,6 +15,8 @@ ENV_FILE = os.path.join(BASE_DIR, ".env")
 SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, "google_service_account.json")
 RAW_JSON_FILE = os.path.join(BASE_DIR, "data", "lark_tong_hop_san_pham.json")
 EMBEDDED_JSON_FILE = os.path.join(BASE_DIR, "data", "lark_embedded_tblTwe6eaWKQO75r.json")
+XUEBA_JSON_FILE = os.path.join(BASE_DIR, "data", "lark_xueba_tblkx4f3nKEHg3QW.json")
+CYBER_JSON_FILE = os.path.join(BASE_DIR, "data", "lark_cyber_tblEyzUBXtJw71qM.json")
 PANCAKE_CSV_FILE = os.path.join(BASE_DIR, "data", "bao_cao_cac_tai_khoan_10_2026.csv")
 CLEAN_CSV_FILE = os.path.join(BASE_DIR, "data", "lark_product_cleaned.csv")
 CLEAN_JSON_FILE = os.path.join(BASE_DIR, "data", "lark_product_cleaned.json")
@@ -23,6 +25,8 @@ LARK_HOST = "https://open.larksuite.com"
 LARK_APP_TOKEN = "CAtMbm9A0a57cHsBZP6ljKYCgxb"
 LARK_TABLE_ID = "tblEr3vySvt58EkK"
 LARK_EMBEDDED_TABLE_ID = "tblTwe6eaWKQO75r"
+LARK_XUEBA_TABLE_ID = "tblkx4f3nKEHg3QW"
+LARK_CYBER_TABLE_ID = "tblEyzUBXtJw71qM"
 TARGET_SHEET_URL = "https://docs.google.com/spreadsheets/d/1V9z5T7BQABDSvsytY0P1kKV5b4lMfpzcFZWghJwUitw/edit"
 
 # Định mức CPL Kế Hoạch theo từng đầu sản phẩm (VNĐ)
@@ -96,6 +100,8 @@ def fetch_lark_records():
 
     main_records = []
     embedded_records = []
+    xueba_records = []
+    cyber_records = []
 
     if app_id and app_secret:
         try:
@@ -116,6 +122,16 @@ def fetch_lark_records():
             print(f"-> Đã tải {len(embedded_records)} bản ghi Embedded từ bảng {LARK_EMBEDDED_TABLE_ID}.")
             with open(EMBEDDED_JSON_FILE, "w", encoding="utf-8") as f:
                 json.dump(embedded_records, f, ensure_ascii=False, indent=2)
+
+            xueba_records = fetch_table_records(headers, LARK_XUEBA_TABLE_ID)
+            print(f"-> Đã tải {len(xueba_records)} bản ghi Xueba từ bảng {LARK_XUEBA_TABLE_ID}.")
+            with open(XUEBA_JSON_FILE, "w", encoding="utf-8") as f:
+                json.dump(xueba_records, f, ensure_ascii=False, indent=2)
+
+            cyber_records = fetch_table_records(headers, LARK_CYBER_TABLE_ID)
+            print(f"-> Đã tải {len(cyber_records)} bản ghi Cyber từ bảng {LARK_CYBER_TABLE_ID}.")
+            with open(CYBER_JSON_FILE, "w", encoding="utf-8") as f:
+                json.dump(cyber_records, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"⚠️ Không thể gọi trực tiếp Lark API ({e}), sử dụng bản lưu cục bộ...")
 
@@ -125,8 +141,14 @@ def fetch_lark_records():
     if not embedded_records and os.path.exists(EMBEDDED_JSON_FILE):
         with open(EMBEDDED_JSON_FILE, "r", encoding="utf-8") as f:
             embedded_records = json.load(f)
+    if not xueba_records and os.path.exists(XUEBA_JSON_FILE):
+        with open(XUEBA_JSON_FILE, "r", encoding="utf-8") as f:
+            xueba_records = json.load(f)
+    if not cyber_records and os.path.exists(CYBER_JSON_FILE):
+        with open(CYBER_JSON_FILE, "r", encoding="utf-8") as f:
+            cyber_records = json.load(f)
 
-    return main_records, embedded_records
+    return main_records, embedded_records, xueba_records, cyber_records
 
 
 def parse_month_str(thang_raw):
@@ -184,35 +206,56 @@ def num_val(v):
         return 0.0
 
 
-def clean_and_tag_records(raw_records, embedded_records):
-    print("\n[2] Làm sạch dữ liệu, THAY THẾ toàn bộ dữ liệu Embedded cũ bằng dữ liệu mới từ tblTwe6eaWKQO75r & đối chiếu CPL Kế hoạch...")
-    pancake_fallback = load_pancake_fallback()
+def extract_prod_list(sp_raw):
+    if isinstance(sp_raw, list):
+        return [str(x).strip() for x in sp_raw if x]
+    if isinstance(sp_raw, str) and sp_raw.strip():
+        return [sp_raw.strip()]
+    return []
 
-    # Loại bỏ toàn bộ các dòng Embedded cũ trong bảng tổng hợp (tblEr3vySvt58EkK) và thay thế bằng các bản ghi từ bảng Embedded (tblTwe6eaWKQO75r)
+
+def clean_and_tag_records(raw_records, embedded_records, xueba_records=None, cyber_records=None):
+    print("\n[2] Làm sạch dữ liệu, gộp dữ liệu Embedded (tblTwe6eaWKQO75r), Xueba (tblkx4f3nKEHg3QW), Cyber (tblEyzUBXtJw71qM) & đối chiếu CPL Kế hoạch...")
+    pancake_fallback = load_pancake_fallback()
+    xueba_records = xueba_records or []
+    cyber_records = cyber_records or []
+
+    # Gom toàn bộ bản ghi từ các bảng chuyên biệt và đánh dấu các cặp (Mã Tháng, Tag Sản Phẩm) cần thay thế
+    override_records = []
+    override_keys = set()
+    for sub_list, default_prod in [
+        (embedded_records, "Embedded"),
+        (xueba_records, "Xueba"),
+        (cyber_records, "Cyber Security"),
+    ]:
+        for sr in sub_list:
+            sf = dict(sr.get("fields") or {})
+            sp_list = extract_prod_list(sf.get("Sản Phẩm"))
+            if not sp_list:
+                sf["Sản Phẩm"] = [default_prod]
+                sp_list = [default_prod]
+            yr, _, ym_code, _ = parse_month_str(sf.get("Tháng"))
+            if yr > 0 and len(sp_list) == 1:
+                tag_sp, _ = map_product_tag(sp_list[0])
+                override_keys.add((ym_code, tag_sp))
+            override_records.append({"id": sr.get("id"), "record_id": sr.get("record_id"), "fields": sf})
+
+    # Loại bỏ các dòng cũ trùng (Mã Tháng, Tag Sản Phẩm) trong bảng chính để thay bằng bản ghi từ bảng chuyên biệt
     combined_records = []
-    removed_old_embedded = 0
+    removed_old = 0
     for r in raw_records:
         flds = r.get("fields") or {}
-        sp_raw = flds.get("Sản Phẩm")
-        if isinstance(sp_raw, list):
-            sp_list = [str(x).strip() for x in sp_raw if x]
-        elif isinstance(sp_raw, str) and sp_raw.strip():
-            sp_list = [sp_raw.strip()]
-        else:
-            sp_list = []
-        if len(sp_list) == 1 and sp_list[0] == "Embedded" and embedded_records:
-            removed_old_embedded += 1
-            continue
+        sp_list = extract_prod_list(flds.get("Sản Phẩm"))
+        yr, _, ym_code, _ = parse_month_str(flds.get("Tháng"))
+        if yr > 0 and len(sp_list) == 1:
+            tag_sp, _ = map_product_tag(sp_list[0])
+            if (ym_code, tag_sp) in override_keys:
+                removed_old += 1
+                continue
         combined_records.append(r)
 
-    if embedded_records:
-        for er in embedded_records:
-            ef = dict(er.get("fields") or {})
-            if not ef.get("Sản Phẩm"):
-                ef["Sản Phẩm"] = ["Embedded"]
-            combined_records.append({"id": er.get("id"), "record_id": er.get("record_id"), "fields": ef})
-
-    print(f"-> Đã xóa {removed_old_embedded} dòng Embedded cũ và thay thế bằng {len(embedded_records)} dòng Embedded mới nhất từ Lark Base.")
+    combined_records.extend(override_records)
+    print(f"-> Đã thay thế {removed_old} dòng cũ bằng {len(override_records)} dòng mới từ bảng Embedded ({len(embedded_records)}), Xueba ({len(xueba_records)}), Cyber ({len(cyber_records)}).")
 
     grouped = {}
 
@@ -594,7 +637,7 @@ def push_to_google_sheet(cleaned_rows):
 
 
 if __name__ == "__main__":
-    raw, emb = fetch_lark_records()
-    cleaned = clean_and_tag_records(raw, emb)
+    raw, emb, xueba, cyber = fetch_lark_records()
+    cleaned = clean_and_tag_records(raw, emb, xueba, cyber)
     push_to_google_sheet(cleaned)
-    print("\n✅ HOÀN TẤT ĐỒNG BỘ CHỈ SỐ EMBEDDED TỪ tblTwe6eaWKQO75r LÊN GOOGLE SHEETS!")
+    print("\n✅ HOÀN TẤT ĐỒNG BỘ DỮ LIỆU EMBEDDED, XUEBA & CYBER LÊN GOOGLE SHEETS!")
